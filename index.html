@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>灯坂駅の夜 v0.8 — 選んだあとの夜</title><style>
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>灯坂駅の夜 v0.9 — 言い直せる夜</title><style>
 :root{--bg:#080f1a;--panel:#111c2a;--panel2:#172536;--line:#324355;--cream:#f0e9d8;--quiet:#b9c5d1;--gold:#e2bc79;--highlight:#273b50;--shadow:0 24px 70px rgba(0,0,0,.38)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(circle at 16% 0%,#1a2b3d 0%,transparent 35%),linear-gradient(150deg,#080e16,#0e1928 55%,#080d16);color:var(--cream);font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;line-height:1.92;letter-spacing:.035em}button{font:inherit}button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}button:disabled{opacity:.38;cursor:not-allowed}#app{min-height:100vh;max-width:1340px;margin:auto;padding:22px clamp(12px,3.4vw,48px) 40px}
 header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:12px;font-family:system-ui,sans-serif;font-size:.8rem;letter-spacing:.22em;color:#d4d9da}.brand-icon{border:1px solid #7b805d;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:var(--gold);font-size:16px}.header-actions{display:flex;align-items:center;gap:9px}.small-btn{border:1px solid #536073;border-radius:6px;background:#152234;color:#d9dfe4;font-family:system-ui,sans-serif;font-size:12px;padding:7px 12px;cursor:pointer}.small-btn:hover{background:#24384f}.small-btn:disabled{opacity:.35}
@@ -56,62 +56,252 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .more-actions{border:1px solid #3a5061;border-radius:6px;padding:5px 10px;background:rgba(8,16,27,.45)}
 .more-actions>summary{list-style:revert;cursor:pointer;font:13px/2.7 system-ui,sans-serif;color:#d3dce5}
 .more-action-list{display:grid;gap:8px;padding:0 0 10px}
+</style><style>/* v0.9 story-first display */
+@media(max-width:900px){.layout>.left{display:contents}.layout>.story{order:2}.layout .atmosphere{order:3}.layout .scenario-panel{order:4}.layout .journal-panel{order:5}}
+.scenario-panel summary,.journal-panel summary{cursor:pointer;list-style:revert}.story .choices{margin-top:6px}
 </style></head><body>
 <div id="app"><header><div class="brand"><span class="brand-icon">灯</span> HISAKA STATION <span style="opacity:.45">/ 夜の記録</span></div><div class="header-actions"><div class="sound-controls" role="group" aria-label="音楽と環境音の設定"><button class="small-btn sound-btn" id="soundBtn" type="button" aria-pressed="false" title="音楽と環境音のオン・オフ">♫ 音を入れる</button><label class="volume-label" for="volumeRange">音量 <input id="volumeRange" type="range" min="0" max="100" value="36" step="1" aria-label="音量"><output id="volumeValue" for="volumeRange">36%</output></label><span id="soundScene" class="sound-scene" aria-live="off">音なし</span></div><button class="small-btn" id="journalBtn" type="button">今夜の記録</button><button class="small-btn" id="saveBtn" type="button">途中を保存</button><button class="small-btn" id="homeBtn" type="button">タイトルへ</button></div></header><div id="main"></div><div class="footer"><span>KRS v2.05を参照した非正本・独立短編試作。原作本文の一部ではありません。</span><span>HTML単体 / オフライン / 通信なし</span></div></div>
 <script>(()=>{'use strict';
-const SAVE='hisaka_v08_save', ARCH='hisaka_v08_archive';
+// 灯坂駅の夜 v0.9 — 非正本の独立した物語試作
+const SAVE='hisaka_v09_save', ARCH='hisaka_v09_archive';
 const $=id=>document.getElementById(id);
 const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};
 const clear=k=>{try{localStorage.removeItem(k)}catch{}};
 const P={
- platform:{name:'三番線',short:'3',sub:'誰かが待つ場所',art:'platform',intro:'屋根の外に続く線路は、夜の向こうで途切れている。いつもここに三番線があるとは限らない。',early:'ベンチの端に子どもが座っている。足元には濡れた紺の袋。',late:'さっきまで誰かがいた場所には、少しだけ温度が残っている。'},
- waiting:{name:'待合室',short:'灯',sub:'温度のある場所',art:'waiting',intro:'窓のくもり。古い電気ポット。時計は正確に動いているようにも、少し遅れているようにも見える。',early:'奥のベンチは空いている。',late:'子どもはここへ移ってきたようだ。窓の外を、ときどき確かめている。'},
- counter:{name:'古い窓口',short:'紙',sub:'行き先を決めない紙',art:'gate',intro:'使われていないはずの窓口。夜だけ、ガラスの向こうに白い紙が置かれている。'},
- phone:{name:'電話ボックス',short:'☎',sub:'声を渡す場所',art:'phone',intro:'公衆電話の金属は冷えている。掲示された夜間連絡先は、少し古い紙に印刷されている。'},
- gate:{name:'改札',short:'門',sub:'町へつながる場所',art:'gate',intro:'改札の外には、灯りのある通りが続く。駅は町から切り離された場所ではない。'},
- sign:{name:'連絡掲示板',short:'掲',sub:'誰へ渡すか',art:'waiting',intro:'時刻表、地域の案内、古い催し物の紙。新旧の知らせが重なっている。'},
- slope:{name:'駅前の坂',short:'坂',sub:'閉店後の町',art:'gate',intro:'坂の途中には、まだ明かりが点いた小さな店がある。人の生活は、深夜にも完全には止まらない。'},
- edge:{name:'ホームの端',short:'風',sub:'終わりの見えない線路',art:'platform',intro:'柵より向こうへは進めない。低い風が、錆びた金具を鳴らす。'}
+ platform:{name:'三番線',short:'3',sub:'誰かが待つ場所',art:'platform',intro:'夜の線路には、列車の気配がない。駅前の家には、まだ明かりが残っている。'},
+ waiting:{name:'待合室',short:'灯',sub:'温度のある場所',art:'waiting',intro:'机には紙コップ。窓の向こうには三番線。暖房は古い音を立てていた。'},
+ counter:{name:'古い窓口',short:'紙',sub:'行き先を決めない紙',art:'gate',intro:'使われていない窓口に、宛名のない白い紙が置かれている。'},
+ phone:{name:'電話ボックス',short:'☎',sub:'声を渡す場所',art:'phone',intro:'案内の紙が重なっている。今夜つながる相手を確かめる必要がありそうだ。'},
+ gate:{name:'改札',short:'門',sub:'町へつながる場所',art:'gate',intro:'ここを通れば町へ出られる。けれど、自分がどこから来たのかはわからない。'},
+ sign:{name:'連絡掲示板',short:'掲',sub:'誰へ渡すか',art:'waiting',intro:'古い案内と新しい案内が並ぶ。文字が読めても、伝わることは同じとは限らない。'},
+ slope:{name:'駅前の坂',short:'坂',sub:'閉店後の町',art:'gate',intro:'店のシャッターが下り始めている。町には、夜を越える人々の仕事がある。'},
+ edge:{name:'ホームの端',short:'風',sub:'終わりの見えない線路',art:'platform',intro:'柵の向こうへは進めない。遠くの光は列車ではなく、坂を曲がる車だった。'}
 };
-const FLAG_LABEL={met:'子どもに声をかけた',sat:'ベンチで時間を過ごした',water:'飲み物を用意した',blank:'白い紙を見た',notice:'夜間の連絡先を確認した',asked:'連絡してよいか尋ねた',contact:'連絡をつないだ',shop:'駅前の人と言葉を交わした',self:'自分の手がかりを調べた',bag:'袋の話を聞いた',listener:'相手の言葉を待った',handoff:'朝の受取先を確認した',boundary:'聞かないことを選んだ',light:'灯りを残した'};
-let archive=read(ARCH)||read('hisaka_v07_archive')||read('hisaka_v06_archive')||read('hisaka_v05_archive')||read('hisaka_v04_archive')||{nights:[]};
-const fresh=()=>({mode:'play',place:'platform',tick:0,seen:['platform'],done:[],flags:{},journal:[],moment:{title:'終電のあと',body:'灯坂駅のホームに、風が通った。\n\nどうしてここへ来たのか、思い出せない。自分のポケットには、文字のない小さな切符がある。\n\n少し離れたベンチに子どもが座っている。顔を上げたその子は、あなたのことを知っているようでも、初めて会ったようでもあった。\n\n「……あなたも、待ってるの？」',choices:[{label:'「そうかもしれない」と答える',reply:'「そっか」\n\n子どもは、それだけ言って、隣を少し空けた。',flags:['met']},{label:'「わからない」と答える',reply:'「……私も、よくわからない」\n\n二人の間を、線路の風が通り抜けた。',flags:['met']},{label:'答えず、少し離れて立つ',reply:'子どもはもう一度、線路を見た。こちらに返事を求める様子はなかった。',flags:['boundary']}]},ending:null,threads:{cold:'unseen',letter:'unseen',line:'unseen'},pieces:{},calls:[],selfPath:'unseen'});
+const fresh=()=>({version:'0.9',mode:'play',place:'platform',act:1,tick:0,seen:['platform'],done:[],journal:[],moment:{title:'終電のあと',body:'終電は、もう行ってしまった。\n\n三番線のベンチに、子どもが一人座っている。紺色の袋を膝に乗せ、線路ではなく、町の明かりを眺めていた。\n\nあなたには行き先のない切符がある。いつ受け取ったのかも、はっきりしない。\n\n子どもはあなたに気づくと、少し体をずらした。\n\n「……そこ、座る？」',choices:[{label:'「座ってもいい？」',action:'first_seat'},{label:'「何を見てるの？」',action:'first_window'},{label:'少し離れて、ホームを眺める',action:'first_quiet'},{label:'会釈して、別の場所へ行く',action:'first_leave'}]},flags:{},observed:{},world:{heaterStopped:false,childLocation:'platform',patrolContact:false,childRequestedCorrection:false,morningArrived:false,blanketUse:'not-offered'},child:{contact:0,sharedPaper:false,sharedWish:false,wantsCorrection:false,plan:'undecided',noteMade:false,scope:'none',selfAsked:false},warmth:{cup:false,blanket:false,placedStep:0,reported:false,blanketSeen:false},contact:{routeConfirmed:false,attempted:false,received:false,scope:'none',confirmedToChild:false},handover:{helped:false,morningObserved:false,knownWish:false},player:{ticket:'unseen',selfWish:false,selfAnswer:'none',reflection:'none'},ending:null});
 let S={mode:'title'};
-const has=f=>!!S.flags[f], done=id=>S.done.includes(id), thread=k=>S.threads?.[k]||'unseen', phase=()=>S.tick<11?0:S.tick<26?1:S.tick<39?2:3;
-const timeText=()=>['終電のあと','夜は深く','午前二時を過ぎて','朝の手前'][phase()];
-const piece=k=>!!S.pieces?.[k], put=k=>{if(!S.pieces)S.pieces={};S.pieces[k]=true};
-const chapter=()=>['第一幕　知らない駅','第二幕　言葉にならないこと','第三幕　受け取る人','第四幕　朝へ渡す'][phase()];
-const visit=p=>{if(!(p in P))return;S.place=p;S.moment=null;if(!S.seen.includes(p)){S.seen.push(p);note('場所','「'+P[p].name+'」へ足を運んだ。')} Sound.effect('move');save();render()};
-const note=(type,line)=>{if(!S.journal.some(j=>j.line===line))S.journal.push({type,line,at:timeText()})};
-const mark=(flags=[])=>flags.forEach(f=>S.flags[f]=true);
+let archive=read(ARCH)||{nights:[]};
+const ACT_TITLES=['','第一幕　まだ、誰も帰らない','第二幕　言ったことと、伝わったこと','第三幕　言い直せる夜','第四幕　それぞれの朝'];
+const TIME=['','終電のあと','夜は深く','午前二時を過ぎて','朝の手前'];
+const note=(type,line)=>{if(!S.journal.some(x=>x.line===line))S.journal.push({type,line,at:TIME[S.act]});};
+const mark=(k)=>S.flags[k]=true;
+const seen=id=>!!S.observed[id];
+const done=id=>S.done.includes(id);
 const save=()=>store(SAVE,S);
-const CALLS={
- child:{at:15,place:'waiting',label:'子どもからのお願い',message:'待合室の方から、小さく「ねえ」と呼ぶ声がした。'},
- patrol:{at:27,place:'gate',label:'巡回の人の頼み事',message:'巡回の人が、改札からこちらを探していた。手を貸してほしいことがあるらしい。'},
- visitor:{at:34,place:'platform',label:'白い手袋を探す人',message:'ホームで、人が小さな白い手袋について尋ねている。'}
-};
-function updateCalls(){
- if(!S.calls)S.calls=[];
- for(const [id,c] of Object.entries(CALLS))if(S.tick>=c.at&&!S.calls.includes(id)){
-  S.calls.push(id);note('駅からの呼びかけ',c.message);
- }
-}
-const activeCalls=()=>S.mode==='play'?(S.calls||[]).filter(id=>!done('npc_'+id+'_start')):[];
-const reachable=id=>id==='slope'?S.tick>=9:id==='edge'?S.tick>=18:id==='sign'?S.tick>=7:id==='counter'?S.seen.includes('waiting'):true;
-function advance(){S.tick++;updateCalls();if(S.tick===12)note('夜の変化','待合室から聞こえていた暖房の低い音が、いつの間にか止まった。');if(S.tick===20)note('夜の変化','子どもは紺色の袋を抱え、何か言いかけてやめた。');if(S.tick===26)note('夜の変化','夜間連絡の掲示に、日付の違う紙が重なっている。');if(S.tick===11)note('夜の変化','時計が少し進んだ。子どもは、待合室の方を見ていた。');if(S.tick===25)note('夜の変化','駅前の人の行き来が増えた気がした。');if(S.tick===31)note('夜の変化','巡回の人が設備を確かめ、町へ一度戻ったらしい。あなたは、その場には居合わせなかった。');if(S.tick===39)note('夜の変化','東の空が、夜の色を薄くしはじめた。');}
-const opt=(label,reply,flags=[],memo='')=>({label,reply,flags,memo});
-const pathOpt=(label,reply,action,flags=[],memo='')=>({label,reply,action,flags,memo});
-const A=[];
-const add=(id,place,label,title,body,options=[],cfg={})=>A.push({id,place,label,title,body,options,...cfg});
-const text=x=>typeof x==='function'?x():x;
-const showMoment=(m)=>{S.moment=m;save();render()};
-function interact(id){let a=A.find(x=>x.id===id);if(!a||!available(a))return;Sound.effect('page');advance();if(!a.repeat)S.done.push(id);mark(a.flags);if(a.memo){const mem=text(a.memo);if(mem)note('体験',mem);}let b=text(a.body);if(typeof a.after==='function')a.after();showMoment({title:a.title,body:b,choices:a.options.map(o=>({...o,reply:text(o.reply)}))});}
-function resolve(i){if(!S.moment)return;const o=S.moment.choices[i];if(!o)return;Sound.effect('tap');mark(o.flags);if(o.action)routeDecision(o.action);if(o.memo)note('選択',o.memo);if(o.end){finish(o.end);return}S.moment={title:'そのあと',body:o.reply||'風が通った。',choices:[]};save();render();Sound.cueAction(o.action)}
+const e=(tag,klass,txt)=>{const n=document.createElement(tag);if(klass)n.className=klass;if(txt!==undefined)n.textContent=txt;return n};
+const button=(label,handler,cls='choice')=>{const n=e('button',cls);n.type='button';n.append(e('span','',label),e('span','arrow','›'));n.onclick=handler;return n};
+const prose=(node,content)=>{String(content||'').split(/\n\s*\n/).filter(Boolean).forEach(p=>node.append(e('p',p.trim().startsWith('「')?'dialogue':'',p)))};
+function remember(id,line){S.observed[id]=true;if(line)note('見届けたこと',line)}
+function visit(place){if(!P[place]||S.moment)return;S.place=place;S.tick++;if(place==='waiting'&&S.act>=2&&!seen('heater_stopped'))remember('heater_stopped','待合室の暖房が止まっていることを確かめた。');if(!S.seen.includes(place)){S.seen.push(place);note('歩いた場所',`「${P[place].name}」へ足を運んだ。`)}Sound.effect('move');
+ if(S.act===2&&place==='waiting'&&S.warmth.blanket&&!S.warmth.blanketSeen&&S.tick>=S.warmth.placedStep+2){S.warmth.blanketSeen=true;S.world.blanketUse='used';remember('blanket_used','子どもが、置いた毛布を自分で使っているところを見た。');show('あとから見えたこと','待合室へ戻ると、子どもが毛布を膝に掛けていた。\n\n「これ、借りた。さっきより暖かいよ」\n\n少しして、あなたを見る。\n\n「……あなたは寒くないの？」',[]);return}
+ if(S.act===2&&place==='platform'&&!seen('empty_bench')&&S.world.childLocation==='waiting'){remember('empty_bench','子どもが自分で待合室へ移っていた。');show('空になったベンチ','三番線のベンチは空いていた。\n\n置き忘れたものはない。子どもは、自分で待合室へ移ったようだ。\n\nあなたが見ていない時間も、その子の時間は進んでいる。',[]);return}
+ save();render()}
+function show(title,body,choices=[]){S.moment={title,body,choices};save();render()}
 function closeMoment(){S.moment=null;save();render()}
-function available(a){if(!a.repeat&&done(a.id))return false;if(a.min!==undefined&&S.tick<a.min)return false;if(a.max!==undefined&&S.tick>=a.max)return false;if(a.req&&!a.req())return false;return true}
-function atActions(p){return A.filter(x=>x.place===p&&available(x))}
+const opt=(label,action)=>({label,action});
+const SC=[];
+function add(id,place,act,label,title,body,choices=[],req=()=>true){SC.push({id,place,act,label,title,body,choices,req})}
+function avail(sc){return S.act===sc.act&&!done(sc.id)&&sc.req()}
+function actionsHere(){return SC.filter(sc=>sc.place===S.place&&avail(sc))}
+function interact(id){const sc=SC.find(x=>x.id===id);if(!sc||!avail(sc)||S.moment)return;S.tick++;S.done.push(id);Sound.effect('page');const body=typeof sc.body==='function'?sc.body():sc.body;show(sc.title,body,sc.choices)}
+function choose(action){S.tick++;Sound.effect('tap');const out=DECISIONS[action];if(!out){closeMoment();return}const result=out();if(result&&Array.isArray(result))show(result[0],result[1],result[2]||[]);else closeMoment();save()}
+function result(body,title='そのあと'){return [title,body]}
+const DECISIONS={
+ first_seat(){S.child.contact++;mark('first_seat');remember('first_seat','最初に、子どもへ座ってよいか尋ねた。');return result('「いいよ。私のベンチじゃないし」\n\n子どもは少し笑って、隣を空けた。\n\n「でも、ここ、けっこう冷たいよ」')},
+ first_window(){S.child.contact++;mark('window_talk');remember('window_talk','子どもが気にしていた窓の明かりの話を聞いた。');return result('「あれ」\n\n子どもは駅前の住宅を指さした。\n\n「あの窓だけ、ずっと明るい。誰か起きてるのかな」\n\n「……消すの忘れただけかもしれないけどね」')},
+ first_quiet(){mark('first_quiet');remember('first_quiet','子どもから少し離れ、同じ夜景を眺めた。');return result('しばらく、時計の音だけが続いた。\n\n子どもは振り向いて言った。\n\n「……あっちの待合室、まだ開いてるよ」')},
+ first_leave(){mark('first_leave');remember('first_leave','最初は子どもに話しかけず、その場を離れた。');return result('子どもは小さく会釈した。\n\n「……気をつけて」\n\nあなたが歩き出すと、その子はまた、駅前の明かりを眺めていた。')},
+ window_agree(){S.child.contact++;mark('window_talk');remember('window_talk','子どもと駅前の窓の明かりについて話した。');return result('「明るいから人がいるとは限らないし、暗いから誰もいないとも限らない」\n\n子どもは言ってから笑った。\n\n「当たり前のこと言ってるね、私」')},
+ window_silent(){remember('window_look','駅前に一つ残った窓の明かりを眺めた。');return result('あなたは何も答えず、家の明かりを見た。\n\n遠くの窓は、見ている間も消えなかった。')},
+ cup(){S.warmth.cup=true;remember('cup','待合室に紙コップを取りやすいように置いた。');return result('紙コップを二つ、机に並べた。\n\n誰が使うかは決めなかった。使わずに帰る人がいても、それでいい。')},
+ room(){remember('waiting_prepared','待合室の使えるものを確かめた。');return result('ポットの表示を正面へ向け、椅子のあたりを確かめた。\n\n今ここにいない人にも、使い方がわかるようにしておいた。')},
+ ticket_look(){S.player.ticket='looking';remember('ticket','行き先のない切符を調べた。');return result('細い枠の中には何も書かれていない。\n\n自分は、どこへ行こうとしていたのだろう。\n\n考えても、答えは見つからなかった。')},
+ ticket_keep(){S.player.ticket='kept';remember('ticket','白紙の切符をしまい、今は考えないことにした。');return result('切符をポケットへ戻した。\n\n今は書かなくてもいい。そう考えたのか、考えることをやめたかったのか。\n\nどちらなのかは、まだわからない。')},
+ white_paper(){remember('white_paper','古い窓口の白い紙には何も書かなかった。');return result('名前も、行き先も書かなかった。\n\nそこに白い紙があることだけを、覚えておく。')},
+ cold_blanket(){S.warmth.blanket=true;S.warmth.placedStep=S.tick;S.world.blanketUse='available';remember('blanket_offered','毛布を手の届くところへ置いた。');return result('毛布をベンチの端へ置く。\n\n子どもはそれを見て言う。\n\n「……使うかどうか、決めていいやつ？」\n\nあなたがうなずくと、子どもは「じゃあ、あとで」と言った。')},
+ cold_ask(){S.child.contact++;remember('asked_cold','寒さについて子どもがどうしたいか聞いた。');return result('「できれば、暖かいところがいいけど」\n\n子どもは暖房を見上げる。\n\n「今すぐここを出なきゃいけないのかは、まだわかんない」')},
+ cold_report(){S.warmth.reported=true;S.world.patrolContact=true;remember('heater_report','暖房の停止だけを巡回の人に伝える方法を探した。');return result('巡回の人へ、暖房が止まったことを伝える。\n\n「ありがとうございます。設備と、今夜待てる場所を分けて確認します」\n\n子どもの事情まで話す必要はなかった。')},
+ cold_wait(){remember('cold_wait','暖房が止まったあと、少し様子を見た。');return result('子どもは両手をこすった。\n\n「ほかに、風が当たらない席あるかな」\n\nしばらくして、自分で席を替えた。')},
+ bag_listen(){S.child.contact++;S.child.sharedPaper=true;remember('bag_paper','子どもから、袋に明日渡すつもりの紙があると聞いた。');return result('「明日、渡そうと思ってた紙」\n\n子どもは袋を開かなかった。\n\n「でも、書いたときと、今はちょっと違う」\n\n「……見せるかどうかも、まだ決めてない」')},
+ bag_wait(){S.child.contact++;remember('bag_wait','子どもが話すまで袋の中身を尋ねなかった。');return result('子どもは袋を抱え直した。\n\n「……見せなくていいんだ」\n\nそれから、少し笑う。\n\n「なんか、変なこと聞いたね」')},
+ bag_ask(){S.child.contact++;remember('bag_boundary','袋の中身を尋ねたが、本人が見せたくないと答えた。');return result('「……まだ見せたくない」\n\n子どもは言って、少し間を置いた。\n\n「別に、あなたが嫌だからじゃないよ。話すだけじゃ、だめ？」')},
+ phone_old(){S.contact.routeConfirmed=false;remember('phone_old','電話ボックスの案内が古い可能性に気づいた。');return result('紙には日付がある。隣の掲示より、ずっと古い。\n\n連絡するときは、相手を確かめる必要がありそうだ。')},
+ sign_verify(){S.contact.routeConfirmed=true;remember('phone_verified','現行の夜間連絡案内を確かめた。');return result('新しい案内には、今夜の連絡を受ける窓口が記されていた。\n\nどこへ話せるかはわかった。でも、誰の何を伝えるかは、まだ決まっていない。')},
+ shop_towel(){mark('towel');remember('towel','駅前の店の人からタオルを受け取った。');return result('「乾いてるから。必要なら使って」\n\n店の人は、シャッターの前で一度手を止めた。\n\n「でも、私も朝には仕事があるんだ。あとは巡回の人に渡しておくね」')},
+ shop_contact(){S.contact.routeConfirmed=true;remember('shop_contact','店の人に、新しい連絡案内の場所を教わった。');return result('店の人は、公開されている今夜の案内を教えてくれた。\n\n「古い番号もまだ残ってるんだ。気をつけてね」\n\nそして荷物を持ち、店じまいの続きに戻った。')},
+ wish_listen(){S.child.contact++;S.child.sharedWish=true;remember('wish_conflict','子どもが、以前の言葉と今の気持ちが違うと話した。');return result('「前に言ったことが、違う意味で届いちゃったかもしれない」\n\n子どもは袋を抱えたまま言った。\n\n「前のも、嘘じゃなかったんだけどね」')},
+ wish_wait(){S.child.contact++;remember('wish_wait','子どもが言葉を探す時間を残した。');return result('「……うん。ありがとう」\n\n子どもは言いかけた言葉をしまった。\n\n少ししてから、さっき見ていた窓の話に戻った。')},
+ ticket_unknown(){S.player.selfAnswer='unknown';remember('self_unknown','子どもに、行き先がわからないと答えた。');return result('「そっか」\n\n子どもは少し考えた。\n\n「……わからないって言えるの、ちょっとうらやましいかも」')},
+ ticket_search(){S.player.selfAnswer='search';remember('self_search','自分の行き先を探しているかもしれないと答えた。');return result('「探してるんだ」\n\n子どもは首をかしげた。\n\n「でも、何を見つけたら終わりなんだろうね」')},
+ ticket_silence(){S.player.selfAnswer='silent';remember('self_silence','自分のことには、まだ答えなかった。');return result('「言いたくない？」\n\n子どもは少し待ってから言った。\n\n「いいよ。私も、まだ言ってないことあるし」')},
+ correction_check(){S.child.wantsCorrection=true;S.child.sharedWish=true;remember('asked_correction','子どもと、希望を伝え直す方法を確かめることにした。');Sound.cueAction('piece_line_correction');return result('「……うん」\n\n子どもは指先で袋を押さえた。\n\n「でも、何を伝えるかは私が決めたい。前に言ったことも、消さないでほしい」')},
+ correction_listen(){S.child.wantsCorrection=true;S.child.sharedWish=true;remember('listened_correction','子どもが今伝えたいことを聞いた。');Sound.cueAction('piece_line_correction');return result('「今すぐ帰るって、決めてない」\n\n「朝になって話を聞いてから、考えたい」\n\n子どもは少し息を吐いた。\n\n「前に帰りたいって言ったのも、本当なんだよ」')},
+ correction_wait(){S.child.wantsCorrection=true;remember('wait_correction','子どもが今すぐ答えを決めなくてもよい時間を保った。');return result('「……うん」\n\n子どもは袋を閉じた。\n\n「でも、朝にいきなり聞かれるのも怖いから……話したいことがあるってだけ、先に伝えられるかな」')},
+ correction_uncertain(){S.child.wantsCorrection=true;remember('uncertain_correction','言い直せるかどうか、確かめていないと伝えた。');return result('「そっか」\n\n子どもは少し困ったように笑う。\n\n「わからないのに、できるって言われるよりはいいかな。じゃあ、わかる人に聞こう」')},
+ note_make(){S.child.noteMade=true;remember('note_written','子どもが自分の言葉で二行のメモを書いた。');return result('子どもは紙に二行を書いた。\n\n「前に『帰りたい』と言いました。それは本当です」\n「でも今すぐ戻ると決めていません。朝、話してから考えたいです」\n\nあなたは、その文字を直さなかった。')},
+ note_talk(){S.child.noteMade=false;remember('note_verbal','子どもは紙に書かず、朝、自分で話すことを考えた。');return result('「……紙がなくても、話していい？」\n\n子どもは袋を閉じた。\n\n「じゃあ、話す人が来たときに、そこから決める」')},
+ note_keep(){S.child.noteMade=false;remember('note_kept','子どもは紺色の袋を開けずに持つことを選んだ。');return result('「これは、まだ渡さない」\n\n子どもは袋を胸元へ引き寄せた。\n\n「でも、話を聞く人がいるかは知りたい」')},
+ contact_scope_wish(){S.child.scope='wish';remember('consent_wish','子どもが、訂正したいという希望を伝えてよいと認めた。');return result('「言い直したいってことは、伝えていい」\n\n子どもは念を押した。\n\n「でも、どうしたいかは、朝に私から話す」')},
+ contact_scope_intent(){S.child.scope='intent';remember('consent_intent','子どもが、朝に話したいことがあるとの連絡を認めた。');return result('「詳しいことはまだ言わないで」\n\n「でも、朝に話す席がほしい、ってことは伝えてもいいよ」')},
+ contact_scope_none(){S.child.scope='none';remember('consent_none','子どもは詳しい希望を今夜は伝えないことにした。');return result('「今は、まだ電話しなくていい」\n\n子どもは少し考えて続けた。\n\n「でも、朝に聞いてくれる人が来るかは、確かめたい」')},
+ call_now(){S.contact.attempted=true;S.contact.received=true;S.contact.scope=S.child.scope==='wish'?'wish':S.child.scope==='intent'?'intent':'safety';S.world.patrolContact=true;remember('contact_received',S.contact.scope==='wish'?'夜の担当へ、本人が認めた範囲で訂正希望を伝え、受領を確認した。':S.contact.scope==='intent'?'本人の話す意思だけを夜間窓口へ伝え、受領を確認した。':'夜間窓口に安全確認を伝え、受領を確認した。');return result('電話口で返事があった。\n\n'+(S.contact.scope==='wish'?'「言い直したいことがあるんですね。朝の担当へ、そのことを引き継ぎます。詳しくは本人にも確認します」':S.contact.scope==='intent'?'「朝に直接お話ししたいんですね。聞き手と場所を確認します」':'「今夜、安全に待てる場所と朝の受け取りを確認します。本人の希望は、また確かめましょう」')+'\n\n受け取られたのは、今、伝えてよいことだけだった。')},
+ call_old_try(){S.contact.attempted=true;S.contact.received=false;remember('contact_attempt_failed','古い案内で連絡を試したが、今夜の窓口につながらなかった。');return result('呼び出し音が続いたが、応答はなかった。\n\n案内の紙には、ずっと前の日付がある。\n\n今夜つながる相手を改めて確かめる必要がありそうだ。')},
+ call_later(){S.contact.attempted=false;remember('contact_later','今は電話せず、朝の聞き手を確認する方針にした。');return result('子どもは電話を見て、やがて首を振った。\n\n「今は、まだいい」\n\n巡回の人が、安全に待てる場所と朝の受け取りを確かめている。')},
+ child_reply_received(){S.contact.confirmedToChild=true;remember('word_arrived','夜に伝えた内容が受け取られたことを、子どもへ確かめて伝えた。');return result('子どもが顔を上げた。\n\n「……私が話したいってこと、伝わった？」\n\n「はい。そこは伝わっています。何をどうしたいかは、朝にあなたから聞きます」\n\n子どもはメモを持ち直した。\n\n「……じゃあ、また話せるんだ」')},
+ listen_again(){remember('child_listened','朝の聞き手について、子どもともう一度確かめた。');return result('「言うこと、増えるかもしれないけど」\n\n子どもは笑った。\n\n「そのときは、また言えばいいんだよね」')},
+ self_talk(){S.player.selfWish=true;S.player.selfAnswer='talk';remember('self_talk','自分も朝になったら誰かに話してみたいと選んだ。');return result('「……そうなんだ」\n\n子どもは白い切符を見る。\n\n「じゃあ、私だけじゃないね」\n\n少しして、声を落とした。\n\n「何から話せばいいか、わかんなくてもいいのかな」')},
+ self_unknown(){S.player.selfAnswer='unknown';remember('self_unknown_end','自分のことは、まだわからないと答えた。');return result('「そっか」\n\n子どもは頷く。\n\n「……わかんないって言うのも、言葉だよね」')},
+ self_wait(){S.player.selfAnswer='wait';remember('self_wait','自分の話は、今は保留することにした。');return result('子どもはそれ以上尋ねなかった。\n\nポケットの中には、まだ白紙の切符がある。')},
+ self_silence(){S.player.selfAnswer='silent';remember('self_silent_end','子どもからの問いには答えなかった。');return result('子どもは、しばらく窓の外を見ていた。\n\n「……そっか」\n\nそれだけだった。')},
+ self_alone(){S.player.selfWish=true;S.player.selfAnswer='talk';remember('self_alone','自分のことを朝の誰かに話してみたいと考えた。');return result('改札の前で、白紙の切符を取り出す。\n\nなぜここにいるかはわからない。それでも、朝になったら、そのことを誰かに話せるかもしれない。')},
+ self_alone_hold(){S.player.selfAnswer='hold';remember('self_alone_hold','自分のことは、今は言葉にしないことにした。');return result('白紙の切符をしまった。\n\n誰かの物語に関わらなかった夜にも、自分の時間は流れていた。')},
+ morning_observe(){S.handover.morningObserved=true;remember('morning_observe','朝の担当者が来て、子どもの話を引き受けるところを確かめた。');return morningS22('watch')},
+ morning_support(){S.handover.morningObserved=true;remember('morning_support','本人の言葉を尊重し、朝の聞き手と受け渡しを確かめた。');return morningS22('support')},
+ morning_distant(){remember('morning_distant','少し離れて、朝の人々が動き始めるのを見守った。');return morningS22('distant')},
+ morning_words(){S.handover.morningObserved=true;S.handover.helped=true;S.handover.knownWish=S.child.sharedWish||S.contact.scope==='wish';remember('words_handed','子どもが認めた範囲の言葉を、朝の人へ渡した。');return morningS23('words')},
+ morning_child(){S.handover.morningObserved=true;S.handover.helped=true;remember('child_spoke','子ども自身が話し始められるよう、聞き手との間を整えた。');return morningS23('child')},
+ morning_not_push(){S.handover.morningObserved=true;remember('morning_pause','本人が話し始めるまで、朝の担当者と待つことにした。');return morningS23('pause')},
+ morning_close(){return morningS24()},
+ reflection_words(){S.player.reflection='words';return endingChooser()},
+ reflection_place(){S.player.reflection='place';return endingChooser()},
+ reflection_question(){S.player.reflection='question';return endingChooser()},
+ reflection_silent(){S.player.reflection='none';return endingChooser()},
+ end_handover(){finish('handover')},end_stay(){finish('stay')},end_leave(){finish('leave')},end_speak(){finish('speak')}
+};
+// 第一幕：日常の一面を知る。
+add('S02','platform',1,'駅前の窓の明かりを見る','ひとつだけ明るい窓','子どもは駅前の家を見ていた。\n\n「ついてるから人がいるとは限らないし、消えてるから誰もいないとも限らない」\n\n言ってから、少し笑う。\n\n「……当たり前のこと言っちゃった」',[opt('「確かにそうだね」','window_agree'),opt('何も言わず、一緒に眺める','window_silent')]);
+add('S03','waiting',1,'紙コップとポットを確かめる','誰かが使うもの','机に、紙コップが重ねられている。\n\n古い暖房が低く鳴っていた。\n\n物を用意することと、誰かに使わせることは違う。',[opt('紙コップを取りやすいところへ置く','cup'),opt('待合室を整える','room')]);
+add('S04','gate',1,'白紙の切符を見直す','書かれていない行き先','ポケットに、折り目のついた切符がある。\n\n行き先は、どこにも書かれていない。\n\n駅名を見比べても、答えは出ない。',[opt('自分の行き先について考える','ticket_look'),opt('今は切符をしまう','ticket_keep')]);
+add('S04b','counter',1,'窓口の白い紙を見る','欄のない紙','窓口に置かれた紙には、宛名も行き先もない。\n\n誰かの代わりに名前を書くことはできる。でも、書いてよいかは別の話だ。',[opt('何も書かずに戻る','white_paper')]);
+add('S03b','edge',1,'ホームの端から町を見る','列車ではない光','風が柵を鳴らした。\n\n遠くに見えた光は、車だった。\n\n駅だけで、町のすべてが決まるわけではない。',[]);
+// 第二幕：現実の小さな困りごとと言葉のずれ。
+add('S07','waiting',2,'止まった暖房を確かめる','音のない待合室',()=>`暖房の低い音が聞こえない。\n\n子どもは、紺色の袋を抱えたまま壁を見上げた。\n\n「壊れたのかな。夜になると止まるやつ？」\n\n「……どっちにしても、寒いのは同じか」${S.warmth.cup?'\n\n机に置いてあった紙コップを見る。「これ、使っていい？」':''}`,[opt('毛布を使えるところに置く','cold_blanket'),opt('子どもに、どうしたいか尋ねる','cold_ask'),opt('巡回の人へ知らせる','cold_report'),opt('少し様子を見る','cold_wait')]);
+add('S08','waiting',2,'紺色の袋について話す','一度書いた紙','子どもは紺色の袋の口を少し開けて、また閉じた。\n\n「紙ってさ。一度書いたら、ずっとそのままなのかな」\n\n「……いや、消しゴムとかの話じゃなくて」',[opt('「話せるところだけでいいよ」','bag_listen'),opt('話すまで待つ','bag_wait'),opt('「中身を見てもいい？」','bag_ask')]);
+add('S10','phone',2,'電話ボックスの案内を読む','古い日付','電話ボックスの案内には、夜間の連絡先がある。\n\nでも、紙はずいぶん古い。今夜もつながるとは限らない。',[opt('別の案内も確認する','phone_old')]);
+add('S10b','sign',2,'新しい夜間案内を確かめる','違う日付',()=>`新旧の案内が重なっている。\n\n${S.contact.routeConfirmed?'駅前の人にも聞いたが、ここで確かめ直すことができる。':'日付の新しい掲示を確認すれば、今夜の連絡先がわかりそうだ。'}`,[opt('新しい案内を確認する','sign_verify')]);
+add('S11','slope',2,'駅前の店の人に声をかける','店を閉める人','店の人は、半分下りたシャッターの前で荷物をまとめている。\n\n「駅の方？　寒いでしょ。乾いたタオルならあるよ」\n\n店の人にも帰る家と、明日の仕事がある。',[opt('タオルを受け取る','shop_towel'),opt('今夜の連絡案内を尋ねる','shop_contact')]);
+add('S12','waiting',2,'子どもと白紙の切符の話をする','あなたの行き先','子どもは切符の白い欄を見た。\n\n「……行き先、ないね」\n\n「ねえ。あなたは、どこに行こうとしてたの？」',[opt('「わからない」','ticket_unknown'),opt('「探しているのかもしれない」','ticket_search'),opt('答えない','ticket_silence')],()=>S.child.contact>0&&S.player.ticket!=='unseen');
+add('S13','waiting',2,'子どもの言いかけたことを聞く','言ったことと、伝わったこと',()=>`子どもは膝に置いた袋を見た。\n\n「前に、誰かに言ったことがあるんだ」\n\n「それが、ちゃんと伝わってないっていうか……」\n\n${S.flags.window_talk?'「明かりがついてたら人がいるって思っちゃうみたいな、そういうことかな」':'「伝わったことと、今の私が思ってることが、違うのかも」'}\n\n言葉を探すように、子どもはしばらく黙った。`,[opt('話せるところだけ聞く','wish_listen'),opt('今は話さずに待つ','wish_wait')],()=>S.child.contact>0);
+add('S11b','edge',2,'ホームの風を確かめる','誰もいない席','駅前の人の行き来が増えた気がする。\n\n三番線のベンチはもう空いている。\n\n待合室には、子どもが自分で移ったらしい。',[]);
+// 第三幕：言い直しの意思、実際の受け渡し。
+add('S14','waiting',3,'子どもの話を聞く','訂正できる？',()=>`子どもは袋の口を何度か折り直した。\n\n「前にね、帰りたいって言ったんだ」\n\n「そのときは、本当にそう思った。でも、今すぐ帰るって決めたわけじゃなかった」\n\n「前の言葉を嘘にしたいわけじゃなくて、今のことも聞いてほしい」\n\n顔を上げる。\n\n「……ねえ。一度言ったことって、あとから訂正できる？」`,[opt('「伝え直す方法を、一緒に確かめよう」','correction_check'),opt('「今は、どう伝えたい？」','correction_listen'),opt('「もう少し考えてからでもいい」','correction_wait'),opt('「私にも、できるかはわからない」','correction_uncertain')],()=>(S.child.contact>1||S.child.sharedPaper||S.child.sharedWish));
+add('S15','waiting',3,'子どもとメモの扱いを考える','二行の間に','子どもは紺色の袋から紙を出し、あなたには裏を向けたまま言う。\n\n「これ、前に書いたやつ。今は、このまま渡すか決めてない」\n\n「……二行くらいなら、今のこと書けるかも」',[opt('本人が、自分の字で二行を書くのを待つ','note_make'),opt('紙には書かず、朝に話すことを考える','note_talk'),opt('今は紙を渡さない選択を尊重する','note_keep')],()=>S.child.contact>0&&(S.child.sharedPaper||S.child.wantsCorrection));
+add('S16','waiting',3,'誰に何を伝えるか確かめる','伝える範囲','子どもが尋ねた。\n\n「連絡するとき、私のこと、どこまで話すの？」\n\n「今話したいことだけでも、いい？」\n\n誰かに伝える前に、本人の意思を確かめられる。',[opt('訂正したいという希望まで伝えてよいか尋ねる','contact_scope_wish'),opt('朝に話す意思だけ伝えてよいか尋ねる','contact_scope_intent'),opt('今は詳しい連絡をしない','contact_scope_none')],()=>(S.child.contact>1&&(S.child.sharedWish||S.child.wantsCorrection||S.child.sharedPaper)));
+add('S16b','phone',3,'今夜の窓口へ連絡する','届く前の声',()=>`確認した案内の前に立った。\n\n${S.contact.routeConfirmed?'今夜の連絡先は確かめてある。':'まだ新しい連絡先を確かめていない。掲示板や駅前の人に尋ねる方法がある。'}\n\n連絡の目的は、子どもの進路を決めることではない。今夜の安全と、朝の受け取りを確かめることだ。`,[opt('確認した窓口へ連絡する','call_now'),opt('今はかけず、朝の聞き手を確認する','call_later')],()=>S.contact.routeConfirmed&&!S.contact.received);
+add('S16old','phone',3,'古い案内へかけてみる','つながらない番号','掲示された番号は古いようだ。\n\nここへかけても、今夜必要な担当者へ届くかわからない。',[opt('連絡を試みる','call_old_try')],()=>!S.contact.routeConfirmed&&!S.contact.attempted);
+add('S16c','sign',3,'今夜の連絡先を見直す','夜の案内','古い紙と新しい紙が並んでいる。\n\n子どもが話す意思を、誰に渡すか。まずは窓口を確かめられる。',[opt('今夜の窓口を確認する','sign_verify')],()=>!S.contact.routeConfirmed);
+add('S17','waiting',3,'夜の連絡の返答を子どもへ伝える','届いた言葉','巡回の人が待合室へ戻ってきた。\n\n「朝の担当へ引き継ぎの確認が取れました」\n\n子どもはメモを持ち直して、その人を見る。',[opt('実際に受領された範囲を伝える','child_reply_received'),opt('今は、もう少し本人の話を聞く','listen_again')],()=>S.contact.received&&!S.contact.confirmedToChild);
+add('S18','waiting',3,'子ども自身が決めたことを聞く','言葉の順番',()=>S.child.sharedWish||S.child.noteMade?'子どもは紺色の袋を閉じた。\n\n「朝になったら、まず私が話そうかな」\n\n「でも、言葉が出なくなったら『少し待ってください』って言いたい」\n\n「……それも自分で言ってみる」':'子どもは紺色の袋を抱えている。\n\n「……朝になっても、まだ決められないかもしれない」\n\n「そのときは、あとで話せる人がいるか聞こうかな」',[opt('子どもの決めたことを尊重する','listen_again')],()=>S.child.contact>1);
+add('S19','waiting',3,'自分の切符について尋ねられる','あなたは？',()=>`子どもはあなたの切符を見た。\n\n「私、書いたことを直したいんだけど」\n\n「あなたは、何も書いてないんだ」\n\n少し考えてから言った。\n\n「ねえ。あなたは、誰かに聞いてほしいこと、ないの？」`,[opt('「朝になったら、私も話してみたい」','self_talk'),opt('「まだ、わからない」','self_unknown'),opt('「今は考えないでおきたい」','self_wait'),opt('答えない','self_silence')],()=>S.child.contact>1&&S.player.selfAnswer!=='talk');
+add('S19b','gate',3,'自分のことを少し考える','書いていない切符','切符の行き先は、まだ白い。\n\nほかの誰かの話を聞いていたかもしれない。何も聞かなかったかもしれない。\n\nでも、自分自身の話も、この駅で始めてよいのだろうか。',[opt('朝になったら、自分も誰かに話してみる','self_alone'),opt('今は、まだ持っておく','self_alone_hold')],()=>!S.player.selfWish);
+add('S20','edge',3,'夜明け前の空を見る','夜が終わる前に','東の空が、夜の色を少し薄くし始めた。\n\n駅前の店のシャッターは閉まっている。\n\n誰かの話の続きは、もう、朝の人へ渡ろうとしている。',[]);
+// 第四幕：子どもの受け渡しを先に進め、主人公はその後自分の結末を選ぶ。
+function morningS22(style){
+ if(style==='distant')return ['人々の朝','朝の担当者と巡回の人が待合室へ入った。\n\nあなたのいる場所から、詳しい言葉までは聞こえない。\n\nそれでも子どもが一人で取り残されてはいないことは見えた。\n\nほかの誰かが、その子の話を受け取ろうとしている。',[opt('その様子を見届ける','morning_close')]];
+ const was=S.contact.received;
+ const lead=was&&S.contact.scope==='wish'?'「昨夜、言い直したいことがあると聞いています」':was&&S.contact.scope==='intent'?'「朝に、自分でお話ししたいと聞いています」':'「昨夜のお話については、まだ詳しく確認していません」';
+ const body='朝の担当者が椅子を引いた。\n\n'+lead+'\n\n子どもは少し考えてから、紺色の袋を膝に置いた。\n\n担当者は、まだ聞いていないことを勝手に補わなかった。';
+ const options=[];
+ if(S.child.contact>0&&S.child.scope!=='none')options.push(opt('本人が認めた言葉だけを、朝へ渡す','morning_words'));
+ if(S.child.contact>0)options.push(opt('本人が話せる席と聞き手を整える','morning_child'));
+ options.push(opt('本人が話し始めるまで、待つ','morning_not_push'));
+ return ['朝の人が知っていること',body,options];
+}
+function morningS23(style){
+ const knows=seen('wish_conflict')||S.child.sharedWish||seen('asked_correction')||seen('listened_correction');
+ let body='朝の担当者は、子どもの方へ向き直った。\n\n';
+ if(style==='words')body+='あなたは、本人に認められた範囲だけを伝えた。\n\n「そのことを聞いています。今の気持ちも、本人に確かめます」と担当者が答える。\n\n';
+ else if(style==='child')body+='空いた椅子は子どものためにある。あなたはその子の言葉を代わりに話さなかった。\n\n';
+ else body+='「ゆっくりでいいですよ」と担当者が言う。\n\n';
+ if(S.child.plan==='direct'){
+  body+='子どもは紺色の袋を持ち直した。\n\n「前に『帰りたい』と言ったのは、本当です」\n\n「でも、今すぐ帰ると決めたわけじゃないんです」\n\n「今の話も、聞いてもらえますか」\n\n担当者はうなずいて、次に何を確かめるか本人に尋ねた。';
+  if(knows)remember('child_voice_morning','子どもが、以前の希望と今の気持ちを朝の人へ自分で伝えるのを見た。');
+ }else{
+  body+='子どもは一度口を開き、また閉じた。\n\n「……今は、まだ全部は話せません」\n\n「後で、話せる人はいますか？」\n\n朝の担当者は、話せる機会と今ここでの安全を、本人と確かめ始めた。';
+  remember('child_pause_morning','子どもが、詳しいことはまだ話さず、後で聞いてくれる人を求めた。');
+ }
+ return ['紺色の袋を閉じる',body,[opt('朝の風景へ進む','morning_close')]];
+}
+function morningS24(){
+ let extra='朝の担当者が窓を少し開けた。夜の冷たさが、まだ残っている。';
+ if(seen('blanket_used'))extra='子どもは、使っていた毛布を膝から外した。\n\n「これ、どこに戻せばいいかな」\n\nあなたが昨夜見たものが、朝の風景に残っていた。';
+ else if(seen('note_written'))extra='子どもは自分で書いた二行を、もう一度見た。\n\n「やっぱり、ちょっと付け足したい」\n\n朝の人は、紙を急いで取り上げなかった。';
+ else if(seen('window_talk'))extra='窓の外を見る。\n\nあの家の明かりは、もう朝の光に紛れていた。\n\nあそこに誰がいたのか、結局わからなかった。';
+ else if(seen('towel'))extra='畳んだタオルが、待合室の端に残っている。\n\n駅前の店は閉まっていた。店の人にも、朝の生活がある。';
+ else if(seen('empty_bench'))extra='昨夜、子どもが座っていたベンチは空いている。\n\nあの子は今、別の人と話している。あなたの知らない続きもある。';
+ const body=extra+'\n\nポケットから切符を取り出す。\n\n行き先は、まだ白い。\n\nそれでも、朝は来た。';
+ return ['昨夜のもの',body,[opt('夜のことを少し考える','reflection_words'),opt('自分がここにいたことを考える','reflection_place'),opt('まだ答えのない問いについて考える','reflection_question'),opt('今は振り返らず、朝を迎える','reflection_silent')]];
+}
+function endingOptions(){
+ const options=[];
+ if(S.handover.helped&&S.handover.morningObserved&&(S.child.scope!=='none'||S.child.sharedWish))options.push(opt('預かった言葉を、朝の人へ託す','end_handover'));
+ options.push(opt('もう少し、ベンチに座っている','end_stay'));
+ if(S.handover.morningObserved)options.push(opt('改札の向こうへ歩き出す','end_leave'));
+ if(S.player.selfWish)options.push(opt('自分も、誰かに話してみる','end_speak'));
+ return options;
+}
+function endingChooser(){return ['この夜をどう終える？','朝の人々は、次の仕事を始めている。\n\n子どもには子どもの続きがある。\n\nあなたの切符には、まだ行き先が書かれていない。\n\n今夜のあなたが選べることは、ひとつではない。',endingOptions()]}
+function progress(){
+ if(S.moment)return;
+ Sound.effect('page');S.tick++;
+ if(S.act===1){
+  S.act=2;S.world.childLocation='waiting';S.world.heaterStopped=true;
+  show('音が止まる','少し夜が深くなった。\n\n三番線のベンチが空になっている。子どもは自分で待合室へ移ったようだ。\n\nそのあと、待合室から聞こえていた低い運転音が、ふいに止んだ。\n\n「あれ……？」\n\n誰かの声が、駅の中に小さく響いた。',[]);return;
+ }
+ if(S.act===2){
+  S.act=3;S.world.childRequestedCorrection=true;S.world.patrolContact=true;
+  const met=S.child.contact>0;
+  if(met){show('言い直せる夜','駅前のシャッターが下り、夜はさらに静かになった。\n\n子どもは、紺色の袋を膝へ乗せ直した。\n\n何かを話すつもりなのかもしれない。\n\nあなたが待合室へ行けば、その言葉を聞けるだろう。',[])}
+  else{show('別の聞き手','駅の向こうで、巡回の人が子どもと話している。\n\nあなたには、会話の内容は聞こえなかった。\n\nそれでも、子どもは自分から聞き手を選び、何か確かめようとしているらしい。\n\nあなた自身の白紙の切符も、まだポケットにある。',[])}
+  return;
+ }
+ if(S.act===3){
+  S.act=4;S.world.morningArrived=true;S.child.plan=(S.child.sharedWish||S.child.noteMade)?'direct':'pause';
+  show('朝の足音','東の空が、少しずつ白み始めた。\n\n駅の外から、自転車のブレーキの音が聞こえる。\n\n改札の向こうに、巡回の人と朝の担当者が現れた。\n\n「おはようございます」\n\n今夜のすべてが終わったわけではない。でも、次の人の時間が始まった。',[opt('子どもと朝の担当者の話を見届ける','morning_observe'),opt('知っている範囲で、引き継ぎに協力する','morning_support'),opt('少し離れた場所から朝を眺める','morning_distant')]);return;
+ }
+ const [t,b,c]=endingChooser();show(t,b,c);
+}
+const END={
+ handover:{name:'朝へ渡された言葉',reflection:'言葉を預かることと、代わりに決めることは違った。',body:'子どもが自分で選んだ言葉を、次の人が受け取った。\n\n最初の言葉が消えたわけではない。今の言葉が、その後ろに並んだ。\n\nあなたが決めたのは、誰かの行き先ではない。言葉を渡すまでの、ほんの少しのことだった。'},
+ stay:{name:'まだ座れるベンチ',reflection:'朝になっても、待つことを選べる。',body:'三番線のベンチに腰を下ろした。\n\n改札の向こうでは、人々がそれぞれの仕事を始めている。\n\n何もかも決まったわけではない。だからといって、今すぐ立ち上がる必要もなかった。\n\n時計は、いつもどおり動いている。'},
+ leave:{name:'改札の向こうの朝',reflection:'誰かに渡せたなら、離れる道もある。',body:'朝の人が、子どものそばに座っていることを見届けた。\n\nあなたがいつまでもそこにいる必要はない。\n\n改札を抜ける。行き先はまだ決まっていない。\n\n坂の下では、朝の店じまいではなく、朝の開店の準備が始まっていた。'},
+ speak:{name:'次に話す人',reflection:'聞く側だった人にも、聞いてもらう権利がある。',body:'朝の担当者に声をかけた。\n\n「……私にも、聞いてほしいことがあるんです」\n\n何から話せばいいのか、まだわからない。\n\n相手は、すぐに答えを出さなかった。\n\n「わかるところから、聞いてもいいですか」\n\n今度は、あなたの番だった。'}
+};
+function endingText(){
+ const ending=END[S.ending];let details=[];
+ if(S.handover.morningObserved){
+  if(S.contact.received&&S.contact.scope==='wish')details.push('夜のうちに「言い直したい」という希望が届いていた。朝の担当者はそれを知ったうえで、本人に改めて尋ねた。');
+  else if(S.contact.received)details.push('夜の連絡は届いていた。ただし、その場で伝えたのは本人が認めた範囲のことだけだった。詳しい希望は朝に本人が確かめた。');
+  else details.push('夜間に詳しい希望は渡らなかった。朝の担当者は、聞いていないことを勝手に埋めず、本人に向き直った。');
+  if(S.child.plan==='direct'&&seen('child_voice_morning'))details.push('子どもは以前の言葉と今の言葉を、別々に受け取ってほしいと自分で伝えた。');
+  else if(seen('child_pause_morning'))details.push('子どもはすぐに全部を話さなかった。後で話せる人がいるか確かめ、そのための時間が残された。');
+ }
+ if(seen('blanket_used'))details.push('昨夜の毛布を、子どもは自分で使っていた。朝になって、それをそっと畳んだ。');
+ else if(seen('note_written'))details.push('子どもが書いた二行には、まだ書き足せる余白があった。');
+ else if(seen('window_talk'))details.push('駅前の窓の明かりは朝の光に紛れた。あの家に誰がいたのか、最後までわからなかった。');
+ else if(seen('towel'))details.push('駅前の店から預かったタオルは、次の人にも使える場所に残っていた。');
+ else if(seen('first_quiet')||seen('empty_bench'))details.push('昨夜のベンチが空いている。そこで何も言わずに過ごした時間も、この夜の一部だった。');
+ if(S.player.reflection==='question')details.push('白い切符に答えはない。それでも、問いはまだ持っていられる。');
+ else if(S.player.reflection==='place')details.push('なぜこの駅にいたのかはわからない。ここで一夜を過ごしたことだけは確かだった。');
+ else if(S.player.reflection==='words')details.push('誰かの言葉を聞いた夜だった。だからといって、誰かの答えを代わりに選ぶ必要はなかった。');
+ return ending.body+(details.length?'\n\n'+details.slice(0,3).join('\n\n'):'')+'\n\n三番線には、今夜も特別な列車は来なかった。';
+}
+function finish(kind){if(!END[kind]||!endingOptions().some(c=>c.action==='end_'+kind))return;S.ending=kind;S.mode='ending';S.moment=null;note('結末',END[kind].name);archive.nights.unshift({date:new Date().toLocaleDateString('ja-JP'),kind,name:END[kind].name,steps:S.tick,visited:[...S.seen],journal:S.journal.slice(),observed:{...S.observed}});archive.nights=archive.nights.slice(0,25);store(ARCH,archive);clear(SAVE);render()}
+function start(){Sound.gesture();S=fresh();save();render()}
+function resume(){Sound.gesture();const o=read(SAVE);if(o&&o.version==='0.9'&&o.mode==='play'&&P[o.place]){S=o;render()}else start()}
+function home(){S={mode:'title'};render()}
+function exportText(){const lines=['灯坂駅の夜 v0.9 — 今夜の記録（非正本ゲーム）',`歩いた時間：${S.tick}場面`,`歩いた場所：${S.seen.map(k=>P[k]?.name||k).join('、')}`,''];S.journal.forEach(j=>lines.push(`[${j.at}] ${j.line}`));if(S.mode==='ending')lines.push('','結末：'+END[S.ending].name,'「'+END[S.ending].reflection+'」','',endingText());const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='灯坂駅の夜_v0.9_今夜の記録.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function artwork(place){
+const sky=`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b1428"/><stop offset=".75" stop-color="#293b51"/><stop offset="1" stop-color="#394759"/></linearGradient><linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#344655"/><stop offset="1" stop-color="#0d1b26"/></linearGradient><radialGradient id="lamp"><stop stop-color="#f7d99a" stop-opacity=".65"/><stop offset="1" stop-color="#e4b770" stop-opacity="0"/></radialGradient><linearGradient id="window" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#a8b5b7"/><stop offset="1" stop-color="#4c5965"/></linearGradient></defs><rect width="900" height="520" fill="url(#sk)"/><circle cx="736" cy="86" r="26" fill="#f6e3b8" opacity=".75"/>${Array.from({length:18},(_,i)=>`<circle cx="${40+(i*137)%800}" cy="${24+(i*61)%170}" r="${i%4?1:1.7}" fill="#e1e4e3" opacity="${.25+i%3*.15}"/>`).join('')}<path d="M0 265 L106 215 183 244 300 205 417 263 520 213 660 257 780 210 900 249 V520 H0Z" fill="#162537" opacity=".77"/><path d="M0 306 Q150 270 270 310 T540 306 T900 294 V520 H0Z" fill="#101c2a"/>`;
+let part='';
+if(place==='platform') part=`<path d="M0 254 L570 194 900 230 900 250 0 286Z" fill="#172838" stroke="#5f6a71" stroke-width="7"/><rect x="34" y="248" width="9" height="205" fill="#66717a"/><rect x="493" y="215" width="11" height="235" fill="#62707a"/><rect x="854" y="236" width="10" height="217" fill="#5a6876"/><ellipse cx="298" cy="292" rx="155" ry="85" fill="url(#lamp)"/><ellipse cx="691" cy="270" rx="145" ry="73" fill="url(#lamp)"/><rect x="228" y="254" width="15" height="8" rx="3" fill="#ffe2a3"/><rect x="688" y="245" width="15" height="8" rx="3" fill="#ffe2a3"/><path d="M0 346 L900 331 V520H0Z" fill="url(#ground)"/><path d="M0 456L900 392 M0 499L900 431" stroke="#99a3a7" stroke-width="5" opacity=".5"/><path d="M0 472L900 410" stroke="#141922" stroke-width="20"/><path d="M50 449 L740 408" stroke="#a9ad9e" stroke-width="4" opacity=".37"/><rect x="204" y="322" width="188" height="19" rx="3" fill="#a59b80"/><rect x="211" y="344" width="176" height="9" rx="2" fill="#595b60"/><path d="M231 353L219 389 M367 353L379 389" stroke="#676363" stroke-width="9"/><ellipse cx="335" cy="401" rx="44" ry="7" fill="#0a1420" opacity=".5"/><circle cx="308" cy="298" r="20" fill="#152433"/><path d="M286 316 Q315 308 335 326 L340 370 285 368Z" fill="#2c3947"/><path d="M288 364L279 395 M324 367L332 397" stroke="#1c2937" stroke-width="13" stroke-linecap="round"/><rect x="372" y="332" width="30" height="36" rx="5" fill="#384356"/><rect x="382" y="343" width="18" height="2" fill="#a49e8f"/><rect x="570" y="284" width="173" height="56" rx="3" fill="#d1c8b2" opacity=".75"/><text x="586" y="311" font-size="25" font-family="sans-serif" fill="#25394c">灯坂</text><text x="585" y="328" font-size="10" font-family="sans-serif" fill="#415464" letter-spacing="3">HISAKA</text><rect x="733" y="284" width="10" height="56" fill="#9c8f7f"/>`;
+else if(place==='waiting')part=`<rect width="900" height="520" fill="#263645"/><rect x="70" y="58" width="760" height="420" fill="#54606c"/><rect x="101" y="81" width="300" height="236" fill="#15243a" stroke="#978c7b" stroke-width="15"/><rect x="111" y="94" width="280" height="209" fill="#253950"/><path d="M109 212L391 212" stroke="#958a77" stroke-width="10"/><path d="M250 83L250 315" stroke="#958a77" stroke-width="10"/><circle cx="298" cy="182" r="65" fill="url(#lamp)"/><path d="M430 100H780V315H430Z" fill="#676d71"/><rect x="447" y="116" width="317" height="184" fill="#404e5c" stroke="#948e82" stroke-width="6"/><rect x="481" y="148" width="255" height="19" fill="#a6a7a1"/><rect x="526" y="197" width="170" height="87" fill="#626866"/><rect y="405" width="900" height="115" fill="#1b2938"/><path d="M75 425H826" stroke="#75808a" stroke-width="5"/><rect x="143" y="347" width="270" height="22" rx="3" fill="#a0937a"/><path d="M165 365 L151 450 M390 365L406 450" stroke="#6d7176" stroke-width="11"/><rect x="560" y="328" width="125" height="16" rx="2" fill="#a29782"/><path d="M573 344L566 433 M667 344L677 433" stroke="#686d71" stroke-width="10"/><path d="M602 296 V329 M649 297V329" stroke="#879299" stroke-width="5"/><rect x="601" y="267" width="50" height="37" rx="6" fill="#b5b0a4"/><path d="M612 261L640 261" stroke="#d2c7ae" stroke-width="5"/><rect x="698" y="315" width="32" height="24" fill="#e8e2d5"/><rect x="732" y="316" width="23" height="22" fill="#e8e2d5"/><ellipse cx="613" cy="323" rx="98" ry="65" fill="url(#lamp)"/>`;
+else if(place==='phone')part=`<path d="M0 332L900 297V520H0Z" fill="url(#ground)"/><path d="M30 312V128H152V312 M170 312V173H302V312 M740 295V158H890V295" fill="#1c2a38" stroke="#2b3947" stroke-width="8"/><rect x="370" y="127" width="268" height="323" fill="#283e4f" stroke="#7b8a8d" stroke-width="11"/><rect x="396" y="168" width="215" height="229" fill="#bad2c6" opacity=".45" stroke="#d6cdb7" stroke-width="7"/><rect x="397" y="133" width="212" height="34" fill="#d6d9c9"/><text x="503" y="156" text-anchor="middle" font-size="18" fill="#3f585e" font-family="sans-serif" letter-spacing="3">電話</text><rect x="468" y="216" width="73" height="124" rx="4" fill="#425668" stroke="#b2b7aa" stroke-width="5"/><rect x="483" y="230" width="43" height="24" fill="#a7b9ae"/><path d="M489 266 Q475 285 491 296 Q510 307 526 281" stroke="#101e2d" stroke-width="8" fill="none"/><circle cx="503" cy="267" r="8" fill="#182c3f"/><rect x="414" y="402" width="180" height="20" fill="#1c2a33"/><ellipse cx="502" cy="315" rx="207" ry="207" fill="url(#lamp)" opacity=".8"/><path d="M0 475L900 428" stroke="#a4aeb0" stroke-width="4" opacity=".4"/>`;
+else part=`<path d="M0 329L900 294V520H0Z" fill="url(#ground)"/><rect x="0" y="121" width="900" height="223" fill="#243442"/><rect x="0" y="102" width="900" height="31" fill="#344351"/><rect x="46" y="154" width="310" height="161" fill="#17293a" stroke="#727f81" stroke-width="9"/><path d="M203 155V314" stroke="#78818a" stroke-width="7"/><circle cx="235" cy="226" r="111" fill="url(#lamp)" opacity=".8"/><rect x="491" y="161" width="309" height="168" fill="#334554"/><rect x="515" y="176" width="260" height="138" fill="#15273a"/><path d="M643 179V310" stroke="#717c83" stroke-width="8"/><rect x="420" y="337" width="70" height="87" fill="#60727a"/><rect x="510" y="337" width="70" height="87" fill="#60727a"/><path d="M418 354L580 354 M449 346V425 M544 346V425" stroke="#a1a69c" stroke-width="7"/><rect x="424" y="328" width="154" height="16" fill="#c4b58f"/><path d="M0 446L900 404" stroke="#a2acaf" stroke-width="5" opacity=".46"/><rect x="48" y="165" width="170" height="49" fill="#d7d0b7"/><text x="132" y="195" text-anchor="middle" font-size="22" font-family="sans-serif" fill="#334651">灯坂駅</text><ellipse cx="710" cy="250" rx="155" ry="90" fill="url(#lamp)"/>`;
+return `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="夜の灯坂駅の風景" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice">${sky}${part}</svg>`;
+}
 
+function navArt(where,large=false){const node=e('div','art-frame'+(large?' large-art':''));node.innerHTML=artwork(P[where].art)+'<div class="art-shade"></div>';const cap=e('div','art-caption');cap.append(e('span','place-tag','ひさかえき / '+P[where].sub),e('h2','',P[where].name));node.append(cap);return node}
 
 // v0.6: Six differentiated soundscapes synthesized entirely inside Web Audio.
 // No external audio or network requests. Starts only from an explicit user action.
@@ -281,15 +471,15 @@ const Sound=(()=>{
  }
  function soundScene(){
   if(S.mode==='title'||S.mode==='archive')return 'title';
-  if(S.mode==='ending'||(S.mode==='play'&&S.tick>=46))return 'dawn';
+  if(S.mode==='ending'||(S.mode==='play'&&S.act>=4))return 'dawn';
   if(S.mode==='journal')return 'quiet';
   const title=S.moment?.title||'';
-  if(title==='伝えたあとに変わること'||title==='いま答えなくても')return 'quiet';
+  if(['伝えたあとに変わること','いま答えなくても','訂正できる？','届いた言葉'].includes(title))return 'quiet';
   if(title==='白い手袋の持ち主'||title==='つながらない番号'||title==='修理する前に'||title==='途中で止めてもいい'||title==='一枚だけでは足りない')return 'tension';
   if(S.mode==='play'){
    if(S.moment&&(title==='そのあと'||title==='誰の行き先か'||title==='あなたの行き先'||title==='今夜どこで待ちたいか'||title==='二人分のベンチ'||title==='届いた声'||title==='手分けした夜'||/子ども|「/.test(S.moment.body||'')))return 'talk';
-   if(S.place==='phone'&&S.tick>=19&&thread('line')!=='connected')return 'tension';
-   if(S.place==='waiting'&&S.tick>=12)return 'talk';
+   if(S.place==='phone'&&S.act>=3&&!S.contact.received)return 'tension';
+   if(S.place==='waiting'&&S.act>=2)return 'talk';
   }
   return 'night';
  }
@@ -334,688 +524,54 @@ const Sound=(()=>{
  return {gesture,effect,cueAction,changeEnabled,changeVolume,updateScene,previewNext,paint,pauseIfHidden};
 })();
 
-// 第一幕：見ること。どの手がかりも正解条件ではない。
-add('bench','platform','ベンチに近づく','空いている場所','子どもは、座席の端を指先でなぞっていた。\n\nあなたが近づくと、ほんの少しだけ体を寄せる。隣へ座ってもいいという意味なのか、距離を取りたいのか、まだわからない。\n\n「ここ、寒いね」\n\nその言葉は、質問ではなかった。',[
- opt('少し離れて座る','あなたはベンチの端に腰を下ろす。会話は始まらない。けれど、子どもは立ち去らずにいた。',['sat'],'子どもの隣ではなく、少し離れて座った。'),
- opt('座ってもよいか聞く','「いいよ」\n\n子どもは自分の荷物を膝の上へ移した。空いた幅は、ちょうど一人分だった。',['met','sat'],'座ってよいか本人に尋ねた。'),
- opt('無理に近づかない','しばらくすると子どもが顔を上げた。何も言わずにいる相手も、この夜には必要かもしれない。',['boundary'],'距離を保つことを選んだ。')],{max:17});
-add('clock','platform','ホームの時計を見る','止まらない時計','秒針がひとつずつ動く。\n\nそこには、あなたがいつからこの駅にいるのかを示す答えはない。発車時刻の表示も、今夜の三番線のことを説明してくれない。\n\nただ、秒針が進む間、駅の外のどこかでも同じ時間が流れている。',[],{memo:'ホームの時計は普通に動いていた。'});
-add('ask_wait','platform','何を待っているのか聞く','行き先を聞かない問い','「電車？」と訊くと、子どもは首を振った。\n\n「……来るなら、乗らなきゃいけないのかなって」\n\nあなたが何も答えないでいると、子どもは靴のつま先を見た。\n\nホームがあることと、乗らなければならないことは、同じではない。',[
- opt('「乗るかどうかは、まだ決めなくていい」','「……そうなの？」\n\n子どもは線路ではなく、目の前のベンチを見た。',['listener'],'乗ることを急がせなかった。'),
- opt('「何が心配なの？」と尋ねる','「帰ったら、先に話が決まってる気がする」\n\n子どもはそこまで言って、口を閉じた。',['met'],'帰る先に、子どもが気がかりを持っていると聞いた。'),
- opt('答えを出さず一緒に待つ','電車の音は来ない。あなたも結論を口にしなかった。',['sat'],'答えを急がせない時間を過ごした。')],{max:18});
-add('line','platform','線路の向こうを眺める','届かない明かり','線路は闇の中へ伸び、途中で一度だけ街灯の光を受ける。\n\n遠くに見えた光は列車ではなく、坂を曲がる自動車だった。\n\n見えたものを、見えたままにしておく。今夜の駅で、それは思ったより難しい。',[],{memo:'遠くの光は列車ではなく、町の車だった。'});
-add('water','waiting','飲み物の用意をする','湯気の行き先','棚に、紙コップと電気ポットがある。ポットの横には「使ったら補充を」と、誰かの字で書かれていた。\n\nあなたはお湯の温度を確かめる。誰のために使うかを決める前に、手に渡せるものがある。',[
- opt('紙コップを二つ用意する','空のカップをひとつ余分に置いた。誰が使うかは、今は決めなくていい。',['water'],'待合室に紙コップを用意した。'),
- opt('ポットを見やすい場所へ寄せる','次に来る人が使えるよう、表示を正面へ向けた。',['light'],'待合室の小さな準備を整えた。')]);
-add('window','waiting','窓のくもりを眺める','外側の気配','窓ガラスに、うっすら指の跡がついている。\n\n子どもが残したものか、以前ここに来た誰かのものかはわからない。駅の外では、自転車を押して歩く人が通り過ぎた。\n\nあなたがここで見ているものの外側にも、いつもの暮らしがある。',[],{memo:'窓の外に、自転車を押す人が見えた。'});
-add('heater','waiting','暖房と毛布を確かめる','使えるもの','棚には洗って畳まれた薄い毛布がある。暖房のスイッチには、触れればすぐわかる古い印が残っている。\n\n何かを新しく発明しなくても、今あるものを使えるようにするだけで夜が少し変わる。',[
- opt('毛布をベンチの端に置く','「使っていいです」と書き添えたわけではない。それでも、手の届くところに置いた。',['light'],'毛布を取りやすいところへ置いた。'),
- opt('必要な人に、使うか聞く','今は誰も答えなかった。ならば、後でもう一度尋ねればいい。',['asked'],'道具があることを、押しつけずに伝えるつもりになった。')]);
-add('ticket','gate','自分の切符を見る','白い余白','ポケットには、折れ目のある小さな切符が入っていた。行き先欄は、何度見ても白い。\n\n裏側に「また来る」と書かれている気もする。けれど、それが誰の字なのか、思い出せない。\n\nいまは、事実と、思い出そうとしていることを分けて持つしかない。',[
- opt('切符をしまっておく','まだ名前のない思い出を、急いで本物にしない。あなたは切符をしまった。',['self'],'白紙の切符をしまった。'),
- opt('駅名と見比べる','駅の名前は確かに灯坂駅だ。けれど、切符は何も答えなかった。',['self'],'切符と駅名を見比べた。')]);
-add('gate_light','gate','町の灯りを見る','閉まっていない出口','改札の外には暗い坂道がある。遠い窓には、寝る前の最後の明かりが点いている。\n\nその明かりの家に誰がいるのか、あなたは知らない。けれど、駅だけですべてを済ませなくてよいことは、少しわかる。',[],{memo:'町の家には、まだ灯りが残っていた。'});
-add('phone_numbers','phone','掲示された連絡先を読む','一枚の連絡先','電話ボックスの内側には、相談窓口と、夜間に連絡を取るための番号が並んでいる。古い情報もあるかもしれないので、使う時にはつながった相手を確認する必要がある。\n\n「誰に、何を、どこまで伝えるか」。連絡する前から決めてよいことばかりではない。',[
- opt('番号と窓口名だけ覚える','紙には具体的な番号もある。でも、今ここで大事なのは、たった一人で決めなくていいと知ることだった。',['notice'],'夜間の連絡先を確認した。'),
- opt('他に連絡できる場所を調べる','市の担当、地域の人、緊急時の連絡先。ひとつにつながらなければ、別の道もある。',['notice'],'連絡先が複数あることを確かめた。')]);
-add('public_notice','sign','掲示板を確かめる','誰かが貼った紙','「この先、工事中」「夜間の連絡」「忘れ物のお知らせ」。何年も前の日付の紙と、今週の日付の紙が重なっている。\n\n古いものだけでは、今夜の安全は守れない。新しい紙だけでは、誰かがここを使ってきたこともわからない。',[
- opt('今夜に関係する案内を読む','受け付けるのは、名前より先に今夜の状況だと書かれている。',['notice'],'掲示板で夜間の案内を見た。'),
- opt('古いお知らせを読み直す','忘れ物の欄には、ずっと探しに来なかった人の名前がある。自分の切符に名前がないことを思い出した。',['self'],'掲示板の古い忘れ物の紙を読んだ。')],{min:7});
-add('sign_bench','sign','古いベンチの張り紙を見る','座っていい場所','「ご自由にお掛けください」\n\nいつ貼られたかわからない小さな紙がある。誰かが剥がさなかったのだろう。\n\n特別な力がなくても、ここに座ってよいと伝えることはできる。誰が最初に貼ったのか、わからないままで。',[],{min:4,memo:'誰かが残した「座っていい」の張り紙を見た。'});
-add('counter_paper','counter','白い紙に触れずに見る','欄のない紙','窓口の内側には、記入欄も宛先もない白い紙が置かれている。\n\nあなたには、つい誰かの名前を書いてしまいたくなる。名前があれば、渡す先も決まる気がするからだ。\n\nでも、紙は命令しない。名前を書くかどうかは、まだ本人に聞いていない。',[
- opt('今夜決めることだけを考える','「水がいるか」「寒くないか」「誰に声をかけてよいか」。大きな答えの前に、小さな問いが並んだ。',['blank'],'白い紙には行き先を書かなかった。'),
- opt('紙はそのままにする','ガラスの向こうで、白い紙は白いままだった。',['boundary'],'白い紙はそのままにした。')]);
-add('counter_key','counter','古い鍵の跡を見る','鍵のない引き出し','窓口の引き出しに、丸い鍵穴の跡がある。引いても動かない。\n\n秘密の答えが中にあるのかもしれない、と一瞬思った。\n\nけれど、誰かのことを理解するのに、閉まったものをこじ開ける必要はない。',[
- opt('引き出しはそのままにする','確かめられないものは、確かめられないまま残しておいた。',['boundary'],'閉まった引き出しを開けようとはしなかった。'),
- opt('鍵を持つ人がいるか、後で聞く','手を離すと、小さな金属音がした。今、問うべき相手がいるなら、まずその人に聞こう。',['listener'],'鍵についての問いを残した。')]);
 
-// 第二幕：登場人物が勝手に移動し、会話の意味が変わる。
-add('child_wait','waiting','子どもの隣に座る','二人分のベンチ',()=>`子どもは、いつの間にか待合室へ移っていた。\n\n「外、寒くなったから」\n\n${has('water')?'テーブルに置いた紙コップを見て、子どもが訊く。「これ、使ってもいい？」':'子どもは濡れた袖を、片方ずつひっくり返している。'}\n\n帰ることを決めていなくても、暖かい場所へ移ることはできる。`,[
- opt('「もちろん」と言う','子どもは「ありがとう」と言い、少しだけ息を吐いた。',['listener'],'子どもが自分で座る場所を選んだ。'),
- opt('黙って向かい側に座る','しばらく、紙コップの縁だけが小さく鳴った。',['sat'],'向かい側で静かに待った。')],{min:12});
-add('bag','waiting','濡れた袋について聞く','持ってきたもの','子どもの膝には、紺色の小さな袋がある。あなたの視線に気づくと、子どもは袋を抱え直した。\n\n「これ、見たい？」\n\n訊かれたからといって、すぐ中をのぞいていいわけではない。',[
- opt('「話せるところだけでいいよ」と言う','「中身は、明日渡そうと思ってた紙」\n\n子どもは袋を開かずに教えてくれた。「でも、その前に話が進んじゃった」',['bag','listener'],'明日渡すはずだった紙について、子どもが話してくれた。'),
- opt('「見せなくてもいい」と言う','子どもは少し不思議そうに笑った。「……そういうの、ありなんだ」',['boundary'],'袋の中は見ないことにした。')],{min:14});
-add('tomorrow','waiting','明日のことを聞いてみる','決まってしまう前に',()=>`「明日、誰かに話すつもりだった」\n\n子どもは窓の外を見た。\n\n「けど、先に話が行ってて。私が言う前に、どうするか決まってた」\n\n${has('bag')?'袋に入っている紙が、かすかにこすれる。':'手は、ずっと膝の上にある。'}\n\n「帰りたくないんじゃなくて。勝手に帰らされるのが、怖かったのかも」`,[
- opt('「自分の言葉で話したいんだね」','「うん。途中で止まっても、最後まで聞いてくれる人に」',['listener'],'子どもが話す順番を自分で決めたいと知った。'),
- opt('「今夜は全部説明しなくていい」','「……うん」\n\n子どもの肩が、少しだけ下がった。',['boundary'],'今夜すべてを聞き出さないことにした。')],{min:18});
-add('permission','waiting','連絡について相談する','許可という小さな橋',()=>`「朝になったら、どうしようか」\n\n${has('notice')?'掲示板で見た夜間の連絡先を、あなたは思い出す。':'誰か大人に相談する道があることは、わかる。'}\n\n子どもは「知らない人が来て、全部決めたら嫌だ」と言った。あなたは、連絡することと、何もかも決めてもらうことは違うと伝える。\n\nそのうえで、本人が今言ってよいと思うことを聞く。`,[
- opt('まず「今夜、安全に待つ場所がいる」とだけ伝える','「……それなら、いい」\n\n子どもは、必要なことだけを自分で数え始めた。',['asked'],'子どもと相談し、最小限の連絡内容を決めた。'),
- opt('誰に話すか、一緒に考える','「女の人がいい、とか、そういうのも言っていい？」\n\nあなたは、希望として伝えてよいと言った。',['asked','listener'],'連絡先に伝えたい希望を一緒に整理した。'),
- opt('今は保留し、あとで尋ねる','「うん、あとで」\n\nそれもまた、ひとつの返事だった。',['boundary'],'連絡の可否を急がせなかった。')],{min:19});
-add('unasked','platform','空になったベンチを見る','誰もいない席','先ほどまで子どもが座っていた場所に、薄い水の跡が残っている。\n\nあなたが誰かのそばを離れても、その人の時間が止まるわけではない。子どもは待合室へ移ったらしい。\n\n駅の中で、互いに見ていない時間が生まれていた。',[],{min:9,memo:'子どもが、自分で待合室へ移っていた。'});
-add('shopfront','slope','明かりのある店を訪ねる','店を閉める人','シャッターを半分下ろした店から、小さな明かりが漏れる。店の人は段ボールを抱え、こちらを見た。\n\n「駅の方？　まだ誰かいるの」\n\n相手は事情を聞き出そうとはしない。濡れて困っている人がいるなら、乾いたタオルを渡せると言った。',[
- opt('今夜必要なものだけ伝える','「なら、これを持っていきな」\n\n紙袋の中には、畳まれたタオルが二枚あった。',['shop'],'駅前の店の人からタオルを受け取った。'),
- opt('駅に連絡先の案内があるか聞く','「あるはず。でも古い紙もあるから、つながるか確認してね」\n\n店の人は手元の携帯電話も見せてくれた。',['shop','notice'],'駅前の店の人と連絡先を確かめた。')],{min:7});
-add('street_noise','slope','坂を少し歩く','見えないところの生活','遠くで配達用の軽自動車が停まった。運転手は荷物を降ろし、玄関先で誰かと短く話す。\n\n帰れる人たちにも、夜にやることがある。帰れない人にも、夜を渡す先がある。\n\nあなたは駅の方を振り返る。三番線の灯りは、ここからだと普通の駅の灯りに見えた。',[],{min:7,memo:'駅の外では、いつもの仕事と会話が続いていた。'});
-add('shop_return','waiting','置かれたタオルを見る','知らないうちに届いたもの',()=>`待合室の片隅に、清潔なタオルが二枚置かれている。\n\n${has('shop')?'駅前の店から受け取ったものだ。':'あなたが外へ出ている間に、店の人が置いていったのかもしれない。誰が届けたのか、今はわからない。'}\n\n子どもは一枚を手に取り、もう一枚を戻した。「あとから誰か使うかもしれないから」`,[
- opt('「そうだね」と答える','子どもはタオルを膝に置いた。自分が受け取ることと、次の人を考えることは、両立する。',['light'],'待合室にタオルが二枚あった。'),
- opt('残ったタオルを畳み直す','誰かが置き、誰かが使い、残りを誰かが整える。それだけの小さな連携だった。',['light'],'次の人のためにタオルを畳んだ。')],{min:21});
-add('phone_try','phone','相談先へ電話する','伝える範囲',()=>`電話を手に取る。\n\n${has('notice')?'掲示された窓口の中から、夜間につながる先を選ぶ。':'案内の中から、夜間にも応答がある先を探す。'}\n\nしばらく呼び出し音が続いた。つながった人は、まず「今、危険なことはありますか」と訊いた。\n\nあなたには、子どもの人生すべてを説明する役目はない。今わかることと、まだわからないことだけを伝えられる。`,[
- opt('わかることと、本人の希望だけ伝える','「受け取りました。次の担当と確認して折り返します」\n\n名前は、本人が話したい時に聞くことになった。',['contact'],'夜間の担当に状況と本人の希望を伝えた。'),
- opt('まず安全確認だけお願いする','「わかりました。朝の連絡につなげます」\n\n相手は、決めていないこともそのまま記録した。',['contact'],'安全確認を依頼し、未確認のことを未確認のまま渡した。')],{min:23,req:()=>false});
-add('ring','phone','電話が鳴るのを待つ','待っているだけの仕事',()=>`受話器を戻すと、電話ボックスの中に静けさが戻った。\n\n${has('contact')?'折り返しの連絡が来るかもしれない。その間にできることを、あなたは数える。':'掲示された窓口が、必ず今夜の答えを持つとは限らない。誰に何を聞くかを整理する時間もいる。'}\n\n番号を知っていることと、誰かが引き受けてくれることは違う。それでも連絡は、一つの橋になる。`,[],{min:15,memo:'連絡がつくまでの時間を過ごした。'});
-add('slope_people','slope','店先の人の話を聞く','駅の外でも',()=>`店の人は、シャッターの鍵を確かめながら言った。\n\n「さっき、町の夜の人にも駅を見てもらうよう言ったよ。心配だったからね」\n\n${has('shop')?'自分が頼んだわけでもないことを、店の人は自分で考えていた。':'あなたが話しかける前から、駅の灯りを気にしていた人がいたらしい。'}\n\n誰かの役目を奪うのでなく、それぞれができることをしている。`,[
- opt('「ありがとう」と伝える','「私も、できるところまでだから」\n\n店の人は笑い、シャッターを静かに下ろした。',['shop'],'店の人も自分の判断で動いていたと知った。'),
- opt('詳しい事情は話さない','店の人は追及せず、「気をつけてね」とだけ言った。',['boundary'],'店の人には必要のない事情を話さなかった。')],{min:25});
-
-// 第三幕：プレイヤーと子ども、そして町の人の問いは別々に動く。
-add('ownref','counter','白い紙をもう一度見る','誰の行き先か',()=>`古い窓口の白い紙は、まだ白かった。\n\n${has('self')?'ポケットの切符も、行き先が書かれていないままだ。':'思い出そうとすると、改札の先の風景だけが浮かぶ。'}\n\nあなたがここにいる理由を知れば、子どものこともわかるだろうか。\n\nいや、きっと別の問いだ。自分の帰り道も、子どもの帰り道も、一枚の紙には収まらない。`,[
- opt('自分の問いを、子どもの問いと分ける','紙に触れず、あなたは窓口から離れた。知らないことが二つあっても、それを一つの答えで片づけなくていい。',['self'],'自分と子どもの事情は別だと考えた。'),
- opt('今日は名前を書かない','白い紙の表面を、夜の光が滑っていった。',['blank'],'自分の行き先も、今夜は書かなかった。')],{min:17});
-add('edge','edge','線路の先を眺める','列車が来ない夜','ホームの端は風が強い。柵の向こうに踏み出せないよう、あなたは足元を確かめる。\n\n三番線の先は、闇の中に続いている。列車が来る気配はない。\n\nここで何かが現れるのを待つことと、目の前の人にできることを考えるのは、違う時間だ。',[],{min:12,memo:'三番線に列車が来る気配はなかった。'});
-add('edge_other','edge','遠くの駅灯を見る','どこかの窓','一つ向こうの駅らしい灯りが、遠くに見えた。普通の列車が走る時間は、まだ先だ。\n\nあなたは時刻表を思い出そうとする。答えは出ない。\n\nそれでも、朝になれば、人が駅に来る。誰かが仕事を始め、誰かは帰り支度をする。',[],{min:16,memo:'朝になれば普通の列車や仕事が始まると思った。'});
-add('staff','gate','夜の巡回の人と話す','今夜を引き継ぐ人',()=>`改札の向こうから足音がする。反射材のついた上着を着た人が、駅の中をそっと見回していた。\n\n「店の方から、誰かが駅にいると聞きました」\n\n${has('contact')?'「連絡も受けています。朝の担当につなぐ準備をしています」':'「事情を全部話さなくて大丈夫です。今夜、危険なことがないかだけ確認させてください」'}\n\nこの人も、子どもの行き先を決めに来たわけではないらしい。`,[
- opt('今夜わかったことだけ伝える','「わからないことは、わからないままでいいです」\n\n巡回の人は頷いた。',['handoff'],'巡回の人に、今夜わかっていることを伝えた。'),
- opt('本人に聞いてから話すと伝える','「そうしましょう。待っています」\n\n相手は改札の外へ一歩下がった。',['asked','handoff'],'本人と確認してから情報を渡すことにした。')],{min:32});
-add('child_name','waiting','「何と呼べばいい？」と聞く','名前の手前','子どもは、すぐには答えなかった。\n\n「いまは、名前じゃなくていい？」\n\n名前を知りたい気持ちがないわけではない。でも、本人がそれを選べることも大事だった。',[
- opt('「いいよ」と答える','「じゃあ、ここでは『ねえ』って呼んで」\n\n子どもは少し笑った。',['listener'],'名前を聞かない約束をした。'),
- opt('「呼ばなくても話せるね」と言う','その子は頷き、窓の外へ目を戻した。',['boundary'],'呼び名を決めずに会話を続けた。')],{min:32});
-add('child_paper','waiting','紙に何を書くか相談する','今夜の紙',()=>`「朝の人に渡すなら、何を書けばいいのかな」\n\n子どもは、あなたに聞いた。\n\n${has('blank')?'古い窓口の白い紙が思い浮かぶ。':'待合室の机に、使っていないメモ用紙がある。'}\n\n本当は、書きたくないこともあるはずだ。あなたは「今日ほしいもの」と「まだ決めていないこと」を分けてみないかと提案する。`,[
- opt('「今日は安全に休める場所が必要」と書く','子どもは、それなら書いていいと言った。\n\n行き先の欄は空いたままだった。',['handoff'],'朝に渡すメモには、今夜必要なことだけを書いた。'),
- opt('「明日は自分で話したい」と書く','子どもは字を確かめてから、「これも書いて」と言った。「最後まで聞いてほしい」',['handoff','listener'],'本人の話す意思を朝の担当へ残した。'),
- opt('紙を使わず、口で伝える準備をする','子どもは頷く。「紙に書かない方がいいこともあるね」',['boundary'],'記録を増やさず、話す準備をした。')],{min:34});
-add('memory','gate','駅に来た理由を思い返す','切符にない道',()=>`自分の切符をもう一度見る。\n\n改札から出てきたのか、ホームで目を覚ましたのか。駅の前の道には見覚えがあるような気がする。\n\n${has('self')?'何度か確かめたが、今夜はそれ以上わからない。':'わかることより、わからないことの方が多い。'}\n\nそれでも今、自分の足が床についていることは確かだ。\n\n帰れないのか。帰らないのか。まだ、区別はつかない。`,[
- opt('誰かに自分のことも聞いてもらおうと思う','自分もまた、今夜の外側にいる一人ではないと気づいた。',['self'],'自分にも受け取ってほしい問いがあると思った。'),
- opt('今日のことだけ覚えていようと思う','切符は白いままでも、子どもと過ごした言葉には輪郭があった。',['sat'],'今夜見たことを覚えておこうと思った。')],{min:32});
-add('handoff_phone','phone','朝の担当と話す','明日へ渡す声',()=>`呼び出し音のあと、落ち着いた声がする。\n\n${has('contact')?'「先ほどの件ですね。今、引き継ぎを確認しています」':'「巡回の人から伝わっています。安全を確かめて、朝の担当へ引き継ぎます」'}\n\n相手は、子どもの名前を決めつけず、わかることと未確認を分けて聞いた。\n\nあなたにも、ここまでわかることと、ここからは専門の人に任せることがある。`,[
- opt('「本人が話したいと言っています」と伝える','「その希望も引き継ぎます」\n\n応対した人は繰り返してくれた。',['handoff'],'子どもの希望を朝の担当へ伝えた。'),
- opt('「今夜の安全と、未確認の点」を確認する','相手は、明日の確認者と今夜の連絡先を分けて答えた。',['handoff'],'今夜と朝の受け取り先を分けて確かめた。')],{min:37,req:()=>has('contact')||has('handoff')});
-add('lastlight','platform','三番線の灯りを見る','消えなくてもいい灯り','三番線の灯りは、少しずつ明るさを変えている。列車は見えない。\n\n夜が終わるからといって、今夜の出来事が消えるわけではない。\n\n誰かがここに来て、誰かが座り、誰かが外からタオルを持ってきた。あなたの目に入らなかった出来事も、確かにあったらしい。',[],{min:23,memo:'三番線に列車は来なかった。'});
-add('lastbench','waiting','子どもと朝を待つ','明日という言葉',()=>`子どもは、窓の外を見た。\n\n「朝になったら、話してもいいかな」\n\n${has('listener')?'何度か言葉を交わしたからだろうか。子どもは、少し自分の言葉を探しやすくなったように見える。':'今日、はじめてちゃんと聞けた言葉があった。'}\n\n「全部は、まだわかんないけど」\n\nあなたは、わからないことも伝えればいいと言った。`,[
- opt('「話せるところからでいい」と答える','「……うん」\n\n朝は、まだ完全に明けていなかった。',['listener'],'話す順番は本人が決めればいいと伝えた。'),
- opt('今は答えず、並んで座る','子どもは安心したとも、不安だとも言わなかった。ただ、立ち上がらなかった。',['sat'],'朝の前に、一緒に座っていた。')],{min:42});
-
-// v0.3：三つの短い事件。ルートは排他的でない。現場にいなくても夜は進む。
-// 1. 止まった暖房：夜の寒さには具体的な影響がある。
-add('arc_cold_find','waiting','暖房の止まった音を確かめる','止まった暖房',()=>`いつも聞こえていた低い音がない。暖房のランプだけが点滅し、窓際から冷たい空気が流れ込んでいる。\n\n子どもは袖口に手を引っ込めた。\n\n${has('light')?'棚には先ほど出した毛布がある。':'棚の奥に、洗って畳まれた毛布が見える。'}\n\nあなたに修理の知識はない。無理に触るより、今あるものをどう使うか考えられる。`,[
- pathOpt('毛布を使えるようにする','毛布の状態を確かめ、子どもの手の届く場所へ運んだ。勝手に肩へ掛けはしなかった。','cold_ready',[],'暖房が止まったので、毛布を使えるようにした。'),
- pathOpt('誰かに状況を伝える準備をする','機械には触れず、異常の様子を覚えた。連絡先を確かめる必要がある。','cold_report',[],'暖房の異常を伝えられるよう、状態を確認した。')],{min:12,req:()=>thread('cold')==='unseen'});
-add('arc_cold_offer','waiting','寒さについて子どもに聞く','毛布を使うかどうか',()=>`「寒い？」と訊くと、子どもは頷いた。\n\n${thread('cold')==='reported'?'相談できる人を探していることを伝えると、子どもは毛布の方を見た。':'毛布は、棚の端に置いてある。'}\n\n「でも、ほかの人の分は？」\n\n子どもは、使ってしまってよいのかを気にしている。`,[
- pathOpt('「今使っていいか、一緒に確認しよう」','子どもは毛布を受け取ると、「あったかい」と小さく言った。もう一枚は畳んで残した。','cold_shared',['listener'],'子どもが自分で毛布を使うことを選んだ。'),
- pathOpt('「必要なら、ここに置いておくね」','子どもは毛布を見つめた。無理に渡さず、あとで選べるようにした。','cold_left',['boundary'],'毛布を手の届く場所へ残した。')],{min:14,req:()=>['ready','reported'].includes(thread('cold'))});
-add('arc_cold_follow','gate','巡回の人に暖房のことを伝える','暖かい場所の引き継ぎ',()=>`巡回の人は、待合室の方を見て頷いた。\n\n「暖房は、朝の保守へ連絡します。今夜は勝手に直さない方がいいですね」\n\n${thread('cold')==='shared'?'子どもが毛布を使っていることも、あなたは伝えた。':'寒がっている人がいることを、あなたは伝えた。'}\n\n「別の暖かい場所も確認します。一人で何とかしなくて大丈夫です」`,[
- pathOpt('子どもの希望も確かめてから案内する','巡回の人はうなずき、「本人がどうしたいか、一緒に聞きましょう」と答えた。','cold_help',['handoff'],'暖房故障を巡回の人に渡し、別の暖かい場所も確認した。'),
- pathOpt('設備の故障と今夜の状況だけ伝える','設備のことは巡回の人に任せることにした。あなたは待合室へ戻れる。','cold_help',[],'暖房の故障を保守と巡回へつないだ。')],{min:28,req:()=>['reported','ready','shared','left'].includes(thread('cold'))});
-
-// 2. 紺色の袋：本人が何を渡すかを決める。紙を公開する必要はない。
-add('arc_letter_first','waiting','紺色の袋の話を聞く','まだ渡さない手紙',()=>`「これね、渡すはずだったんだ」\n\n子どもは袋の口を閉じたまま言う。\n\n「明日、話してから渡そうと思ってた。だけど、私が話す前に決まったみたいになって」\n\nあなたには、紙を開かなくても聞けることがある。`,[
- pathOpt('「明日、誰に聞いてほしかったの？」','「急がないで聞いてくれる人。途中で止まっても」\n\n言葉が、少しだけ具体的になった。','letter_open',['listener'],'誰に自分の言葉を聞いてほしかったか、子どもから聞いた。'),
- pathOpt('「中身は見なくていいよ」と伝える','「……うん。見せるかどうかは、あとで決める」\n\n子どもは袋を抱え直した。','letter_wait',['boundary'],'手紙の中身を無理に聞かなかった。')],{min:16,req:()=>thread('letter')==='unseen'});
-add('arc_letter_prepare','counter','朝に残す言葉を考える','一枚だけでは足りない',()=>`古い窓口には、無記名の紙がある。\n\nあなたは、子どもにさっき言われた言葉を思い出す。\n\n手紙を代わりに開くことも、内容をまとめてしまうこともできる。けれど、本人の言葉を本人のものとして残す方法もある。\n\n「まだ決めていないこと」を、そのまま渡せるだろうか。`,[
- pathOpt('今夜必要なことだけを、本人に確かめて書く','子どもに確かめたところ、「今夜は安心して休める場所」「明日は自分で話したい」とだけ記してよいと言った。','letter_note',['asked'],'本人に確認した二つの希望をメモに残した。'),
- pathOpt('本人の手紙は、本人に預けたままにする','「じゃあ、まだ持ってる」\n\n子どもは袋を胸に抱いた。手紙は、誰かに提出するための課題ではない。','letter_keep',['boundary'],'手紙を無理に渡さず、本人が持つことにした。')],{min:25,req:()=>['open','wait'].includes(thread('letter'))});
-add('arc_letter_check','waiting','朝のメモを子どもと確認する','書かなかったこと',()=>`窓の外が少し白んできた。子どもは、机の紙を見た。\n\n「これ、私が言ったことになってる？」\n\nたった二行でも、本人の言葉かどうかを確かめる時間が必要だった。`,[
- pathOpt('一行ずつ読んで、本人が直せるようにする','子どもは二行目の最後に「途中で黙るかも」と書き加えた。\n\n自分で選んだ言葉になった。','letter_confirm',['listener'],'子どもが朝のメモを読み直し、自分の言葉に直した。'),
- pathOpt('渡すかどうかも、朝に選んでもらう','「じゃあ、今はしまっとく」\n\n子どもは紙を折り、袋の内側に入れた。','letter_keep',['boundary'],'メモを朝に渡すかどうかも本人に任せた。')],{min:32,req:()=>thread('letter')==='note'});
-add('arc_letter_handoff','gate','朝の人へメモを渡す準備をする','手紙の持ち主',()=>`巡回の人は、あなたに紙を要求しなかった。\n\n「誰の言葉か、本人が決められるようにしておきましょう」\n\n子どもは、袋の中の紙を一度確かめた。`,[
- pathOpt('子ども自身が手渡せるよう、隣にいる','子どもは少し時間をかけて、紙を渡した。渡し終わると、息をついた。','letter_give',['handoff'],'子どもが自分の意思でメモを朝の人へ渡した。'),
- pathOpt('本人が朝まで預かる選択を尊重する','「もう少し持ってる」\n\n子どもは手紙をしまった。今は渡さないという言葉も、その場に残った。','letter_keep',[],'朝になっても子どもが手紙を持っていることを尊重した。')],{min:39,req:()=>thread('letter')==='confirmed'&&(has('handoff')||thread('line')==='connected')});
-
-// 3. 古い連絡先：情報を調べ直せることが、朝の受け渡しを変える。
-add('arc_phone_old','phone','古い連絡先にかけてみる','つながらない番号',()=>`掲示された番号の横に、何年か前の日付がある。\n\n試しに案内を確かめると、現在は使われていない番号だった。\n\nただ、掲示板には新しい紙も貼られていたはずだ。電話がつながらなかったことは、これで終わりではない。`,[
- pathOpt('掲示板の新しい紙を確かめる','いまある情報を、もう一度確かめることにした。','line_old',[],'古い夜間連絡先が使えないとわかった。'),
- pathOpt('駅前の店の人にも尋ねる','駅前にはまだ灯りが残っている。事情を全部話す必要はない。','line_shop',[],'駅前の人に連絡先を確認することにした。')],{min:19,req:()=>thread('line')==='unseen'});
-add('arc_phone_board','sign','今夜使える案内を確認する','新しい紙の下',()=>`掲示板には、古い案内の上に今週の日付の紙が貼られている。\n\n担当の窓口名と、夜間の連絡方法が更新されていた。\n\n古い番号が通じなかった理由を、これで一つ説明できる。`,[
- pathOpt('窓口名と連絡方法を確かめる','間違えないよう、今週の日付を確かめた。','line_verified',['notice'],'今夜使える連絡先を掲示板で確認した。'),
- pathOpt('誰へ渡すかだけ覚える','あなたは窓口名を記憶した。今夜は、また戻って確かめてもいい。','line_verified',['notice'],'連絡先の新しい案内を確かめた。')],{min:19,req:()=>thread('line')==='old'});
-add('arc_phone_shop','slope','駅前の人に連絡先を尋ねる','町が知っている番号',()=>`店を閉めようとしていた人は、携帯電話を取り出した。\n\n「古い紙、残ってた？　今は市の夜間担当につながる方を使うんだよ」\n\n名簿のようなものを見せるのではなく、公開された案内の場所を教えてくれた。`,[
- pathOpt('教わった連絡方法を確認する','あなたは連絡の入口を確かめた。話す内容は、本人にも相談してから決められる。','line_verified',['notice'],'町の人に、現行の夜間連絡方法を教わった。')],{min:19,req:()=>thread('line')==='shop'});
-add('arc_phone_connect','phone','確認した窓口へかける','届いた声',()=>`確認した連絡先へ電話をかけると、今度は応答があった。\n\n「灯坂駅ですね。まず今夜の安全を確認しましょう」\n\n${has('asked')?'子どもと話し、伝えてよいことを先に決めてある。':'子どもの希望をまだ聞き切ってはいない。いま伝えられるのは、駅に人がいて今夜の安全確認が必要だということまでだ。'}\n\n電話口の人は、聞いていないことを勝手に補わなかった。`,[
- pathOpt('今夜の安全と未確認事項を伝える','「承知しました。現場の巡回と朝の担当を確認します」\n\n相手は、わからないことをわからないまま受け取った。','line_connected',['contact'],'新しい連絡先へつなぎ、今夜の状況を渡した。'),
- pathOpt('子どもに話せる範囲を聞いてから続ける','あなたは受話器を置く前に、本人に伝えてよいことをもう一度確かめた。電話口の人は、その間も待っていた。','line_connected',['contact','asked'],'本人の同意を確かめながら、新しい担当へ連絡した。')],{min:23,req:()=>thread('line')==='verified'});
-add('arc_together','waiting','これまでにしたことを子どもと振り返る','手分けした夜',()=>`待合室には、今夜の小さな痕跡がいくつも残っている。\n\n${['shared','helped'].includes(thread('cold'))?'毛布は畳まれ、寒さをしのぐ場所が確かめられた。':'暖房が止まったままでも、巡回の人が見回りに来ている。'}\n\n${['confirmed','given'].includes(thread('letter'))?'子どもが書き直したメモは、本人の手元にある。':'手紙はまだ袋の中にある。'}\n\n${thread('line')==='connected'?'連絡先が確認され、今夜の事情が届いている。':'夜間の連絡は、巡回の人へと渡されつつある。'}\n\n「一人で全部しなくても、よかったんだね」\n\nあなたは、自分にも当てはまる言葉だと思った。`,[
- pathOpt('「それぞれ、できるところまでだったね」と答える','子どもは頷く。今夜を、誰か一人の手柄にはしない。','together',['listener'],'今夜の出来事を一人で引き受けず、分けて考えた。'),
- pathOpt('しばらく窓の外の明かりを見ている','言葉にしない時間にも、ほかの誰かが次の準備をしている。','together',['sat'],'朝の前に、何が変わったかを確かめた。')],{min:37,req:()=>['shared','helped'].includes(thread('cold'))&&['confirmed','given'].includes(thread('letter'))&&thread('line')==='connected'});
-
-// 選択時の実効処理。物語本文だけでなく、次の選択肢の出現条件が変わる。
-function routeDecision(action){
- const [group,...rest]=action.split('_');const val=rest.join('_');
- if(group==='cold')S.threads.cold=({ready:'ready',report:'reported',shared:'shared',left:'left',help:'helped'})[val]||thread('cold');
- if(group==='letter')S.threads.letter=({open:'open',wait:'wait',note:'note',keep:'kept',confirm:'confirmed',give:'given'})[val]||thread('letter');
- if(group==='line')S.threads.line=({old:'old',shop:'shop',verified:'verified',connected:'connected'})[val]||thread('line');
- if(group==='piece')put(val);
- if(group==='self'){S.selfPath=val;put('self_'+val);}
- if(action==='together')S.flags.together=true;
+function sceneNav(parent){const nav=e('div','place-nav');Object.keys(P).forEach(k=>{const p=P[k],b=e('button','place-btn'+(S.place===k?' active':''));b.type='button';b.disabled=!!S.moment;b.append(e('span','',p.short),e('small','',p.name));b.onclick=()=>visit(k);nav.append(b)});parent.append(nav)}
+function situation(){
+ if(S.act===1)return '子どもは駅前の明かりを眺めている。話しても、距離を置いてもいい。';
+ if(S.act===2)return '暖房が止まった。紺色の袋、古い連絡案内も気になる。全部を調べる必要はない。';
+ if(S.act===3)return S.child.contact>0?'子どもが自分の言葉を考えている。誰に何を伝えるかは、本人に確かめよう。':'子どもは巡回の人に相談している。あなた自身の切符について考える時間もある。';
+ return '朝の人たちが、夜から役目を受け取り始めた。';
 }
-function scenarioDawn(){
- let paragraphs=[];
- const c=thread('cold'),l=thread('letter'),t=thread('line');
- paragraphs.push(['shared','helped'].includes(c)?'暖房は戻らなかった。それでも、本人が使うと決めた毛布や、巡回の人が確かめた暖かい場所が残った。':c==='left'?'毛布は手の届く場所に残っていた。子どもは自分で使うかを決め、朝の人が暖房の故障を引き継いだ。':c==='reported'?'暖房の故障を伝える準備はできていた。朝の巡回の人が、設備と今夜の寒さを引き受けた。':'朝の巡回で、待合室の暖房が止まっていたことがわかった。子どもが寒い時間を過ごした事実は消えない。次に備えて、設備の確認が申し送られた。');
- paragraphs.push(l==='given'?'子どもは、自分で整えた言葉を、自分の手から次の人へ渡した。紙に書いていないことまで、誰も代わりに決めなかった。':l==='confirmed'?'子どもが自分で直したメモは、まだその子の手の中にあった。渡すかどうかは、次の朝の会話で決められる。':l==='kept'?'紺色の袋は、子どもの手元に残った。手紙を今夜渡さないという選択も、誰にも取り上げられなかった。':'紺色の袋の中身は、最後までわからなかった。朝の人は、子どもが自分で話せるように、まず待つことから始めた。');
- paragraphs.push(t==='connected'?'つながらなかった古い連絡先を調べ直し、夜の担当へ状況を渡せた。次の人が何を知っているかも、確かめられた。':t==='verified'?'新しい連絡先は確かめられた。電話をする前に朝が来たが、巡回の人がその案内を引き受けた。':'古い掲示と新しい掲示の違いは、その夜のうちに確かめられなかった。朝の担当は、同じ戸惑いを繰り返さないよう案内を調べ直した。');
- if(piece('cold_separated')||piece('cold_delegated'))paragraphs.push('設備が直ったわけではない。今夜と朝の担当を分けたことが、待つ場所を確保する助けになった。');
- if(piece('listener_options')||piece('listener_pause'))paragraphs.push('子どもが話すかどうかだけではなく、誰が、どのように話を聞くかも朝へ渡せた。');
- if(piece('line_correction')||piece('line_morning'))paragraphs.push('夜に伝えた希望は、その後も言い直してよいものとして残った。');
- if(piece('self_ask')||piece('self_remember'))paragraphs.push('あなた自身の切符にも、まだ行き先は書かれていない。それでも、今夜自分が選んだ一歩はあった。');
- if(has('together'))paragraphs.push('待合室で交わした「一人で全部しなくてよかったね」という言葉が、駅を出ても耳に残っていた。');
- if(piece('child_answer'))paragraphs.push('子どもから頼まれた「途中で止められるか」の確認は、朝の聞き手に届いた。本人が後から希望を言い直したことも含めて、次の会話へ渡された。');
- else if(piece('child_self_done'))paragraphs.push('子どもは、巡回の人へ自分で尋ねた。あなたが代わりに聞かなかった道にも、その子自身の行動があった。');
- if(piece('patrol_reported'))paragraphs.push('巡回の人から頼まれた掲示の確認を、巡回の人へ返せた。店の人は店を閉め、朝の担当が古い案内を引き取った。');
- else if(piece('patrol_done'))paragraphs.push('巡回の人の頼みは、別の人が引き受けた。誰か一人の都合がつかなくても、町の夜は動いていた。');
- if(piece('visitor_returned'))paragraphs.push('白い手袋を探す人は、自分の約束の続きを持って駅を出た。あなたが見送ったのは、この子だけではなかった。');
- if(piece('visitor_echo'))paragraphs.push('紺色の袋を抱えた子どもは、渡すことと話すことは別だと、自分の言葉で考え始めた。');
- if(piece('echo_written'))paragraphs.push('子どもは、自分が書いた短い言葉を、朝の人に渡すことを自分で選んだ。あなたが届けたのは紙だけではなく、言い直せる余白だった。');
- if(piece('echo_speaking'))paragraphs.push('子どもが自分から話すために、聞き手の席がひとつ空けられた。あなたは代わりに話す役目を降りた。');
- if(piece('handoff_fix'))paragraphs.push('古い連絡案内は朝の担当へ具体的に渡され、貼り替える人が決まった。今夜できなかった修正も、そこで途切れなかった。');
- if(piece('handoff_shop'))paragraphs.push('駅前の店に残っていた連絡案内を、町の人と朝の担当が一緒に確かめることになった。夜の頼み事が、朝には町の仕事に変わった。');
- if(piece('morning_correction'))paragraphs.push('担当者は、最初に聞いた希望と、あとから本人が言い直した希望を分けて受け取った。誰も最初の言葉を唯一の答えにしなかった。');
- if(piece('morning_beside'))paragraphs.push('朝の人が来たとき、子どもは「ここで話したい」と自分から伝えた。あなたは隣に座り、会話の主役を奪わなかった。');
- if(piece('morning_unknown'))paragraphs.push('朝の人へ、知らないことを「知らない」と渡した。調べる仕事はそこで初めて、次の人へ続いた。');
- if(piece('morning_pause'))paragraphs.push('朝の人が来てからも、まず少し静かに待つ時間が残った。話すタイミングは子ども本人が選んだ。');
- return '\n\n―― 今夜、あなたが残したこと ――\n\n'+paragraphs.join('\n\n');
-}
-
-// v0.6：同じ一夜に重なる、より深い条件分岐。
-// 人物がいなくても事件は止まらない。選択は「正解探し」でなく次にできることを変える。
-add('cold_record','counter','設備の古い記録を確かめる','修理する前に',()=>`窓口の棚には、設備の点検表が残っていた。最後の記入は、今夜のものではない。
-
-「調子が悪いときは担当へ。自分で分電盤を開けない」と、赤い線が引かれている。
-
-待合室へ戻る前に、あなたには二つの行動ができる。今夜使える場所を探すことと、朝の保守へ事実を渡すこと。`,[
- pathOpt('巡回の人へ渡せるよう、症状だけ控える','点滅のしかた、音が止まった時刻、寒い場所。推測と事実を分けたメモができた。','piece_heater_record',[],'設備の状態だけを記録した。'),
- pathOpt('点検表を閉じ、使える場所を確かめに行く','直さずに過ごせる方法も、今夜の答えになり得る。','piece_warm_route',[],'暖かい場所を探す方針にした。')],{min:23,req:()=>thread('cold')!=='unseen'});
-add('cold_shop_info','slope','駅前の人に暖かい場所を尋ねる','一時間だけの居場所',()=>`駅前の店の人はシャッターを少し上げた。
-
-「奥で温かいお茶くらいなら出せるよ。でも今夜は家に帰らなきゃならないから、ずっとは無理だね」
-
-その人にも生活がある。できることを引き受けてもらうのと、夜明けまで任せきるのは違う。`,[
- pathOpt('何時までなら使えるか確かめる','「もう少ししたら閉める。あとは巡回の人にお願いするね」\n\n短い時間にも、引継ぎ先があった。','piece_shop_window',[],'駅前の店には、時間の限られた暖かい場所があるとわかった。'),
- pathOpt('タオルだけ受け取り、駅へ戻る','「だったら、これを」\n\n店の人は乾いた布を袋に入れた。','piece_shop_cloth',['shop'],'店の人から、夜に使えるタオルを預かった。')],{min:21,req:()=>thread('cold')!=='unseen'&&!done('cold_shop_info')});
-add('cold_child_choice','waiting','今夜どこで待ちたいか確かめる','場所を選ぶ声',()=>`待合室の空気は冷たい。巡回の人は別の暖かい場所がないか確認している。
-
-${piece('shop_window')?'駅前の店は、少しの間なら使えると聞いている。':'駅前にも灯りがある。暖かい場所があるかもしれない。'}
-
-子どもは言う。「また何も聞かないで連れて行かれるのは、いやだ」
-
-外へ出るか、ここで待つか。まずは本人の希望を確かめられる。`,[
- pathOpt('「ここで待ちたい？」と尋ねる','「うん。でも、寒かったら言う」\n\n選び直してもよいことを、あなたは一緒に確かめた。','piece_child_wait',['listener'],'子どもは、いまは待合室で待つことを選んだ。'),
- pathOpt('「別の場所も見てから決める？」と尋ねる','「見てから、決めたい」\n\n子どもは上着を整えた。移ると決めたわけではない。','piece_child_look',['listener'],'子どもは、別の待つ場所も見てから選ぶことにした。')],{min:29,req:()=>['shared','helped','left'].includes(thread('cold'))&&(piece('shop_window')||piece('warm_route')||has('handoff'))});
-add('cold_transition','gate','待つ場所の申し送りを確かめる','誰がここから持つか',()=>`巡回の人は、今夜の安全確認を続けている。
-
-${piece('child_wait')?'「本人は、いまは待合室で待ちたいそうです」':'「本人は、別の場所も見てから決めたいそうです」'}
-
-「わかりました。移動するかどうかを今ここで決めなくても、準備はしておきます」
-
-設備は設備、居場所は居場所。それぞれ担当が違っていた。`,[
- pathOpt('設備の記録と本人の希望を別々に渡す','「助かります」と巡回の人が言った。夜明けに引き受ける人へ、二つの話が分けて届く。','piece_cold_separated',['handoff'],'暖房故障と、本人の待つ場所の希望を別々に引き継いだ。'),
- pathOpt('子どもの希望だけを伝え、設備は担当へ任せる','「設備はこちらで確認します」\n\n巡回の人は、保守担当の名前を確かめた。','piece_cold_delegated',['handoff'],'本人の希望を伝え、設備の判断を担当者へ渡した。')],{min:36,req:()=>piece('child_wait')||piece('child_look')});
-
-add('letter_listen','waiting','子どもが伝えたくなかったことを聞く','途中で止めてもいい',()=>`子どもは紺色の袋を膝に置いた。
-
-「私の話、最後まで聞かないで、もう決めたって言われたの。別に、誰が悪いって言いたいんじゃなくて」
-
-そこで言葉は止まった。何が決まったのか、誰に言われたのか。あなたには、まだ知らないことが多い。`,[
- pathOpt('「今夜、何を決めたくないの？」と尋ねる','「どこへ行くか。明日の話なのに、今夜決めろって言われたくない」\n\n今夜の選択と、明日の判断を分ける必要がある。','piece_letter_time',['listener'],'子どもは、今夜のうちに明日の行き先を決めたくないと話した。'),
- pathOpt('「止めてもいいよ」と、そこで待つ','「……うん。ありがとう」\n\n子どもは袋を閉じた。言わなかった理由を、あなたは詮索しなかった。','piece_letter_silence',['boundary'],'子どもが話を途中で止めることを尊重した。')],{min:22,req:()=>['open','wait'].includes(thread('letter'))});
-add('letter_draft','counter','朝の人が聞く順番を考える','二行の間に',()=>`書き留めた言葉は二行だけだった。
-
-「今夜は安心して休みたい」
-「明日は、自分で話したい」
-
-二行目には、誰が聞くかも、いつ聞くかも書かれていない。ここをあなたが勝手に埋めたら、本人の言葉ではなくなってしまう。`,[
- pathOpt('本人が直せる余白を残す','二行目の下に、空白を残した。「言わない」と書く欄も、用意しなかった。','piece_letter_margin',['boundary'],'朝のメモに本人が言い直せる余白を残した。'),
- pathOpt('確定したことと希望を別々に書く','確認した事実と、本人の希望を分けておいた。あとで誰かが読み違えないように。','piece_letter_distinct',[],'メモの事実と本人の希望を分けて書いた。')],{min:29,req:()=>thread('letter')==='note'});
-add('letter_no_note','waiting','紙を渡さない場合の朝を考える','話さない、という予定',()=>`子どもは袋を抱えたまま、時計を見た。
-
-「紙がなくても、ちゃんと話を聞いてもらえる？」
-
-あなたは、必ず大丈夫とは言えない。それでも、話す前に準備してもらうことはできる。`,[
- pathOpt('「まず、聞いてくれる人を探そう」と答える','「うん」\n\n子どもは、紙ではなく人を待つことにした。','piece_letter_receiver',['listener'],'紙を渡さず、朝に話を聞く人を探すことにした。'),
- pathOpt('「今日は話さない、と伝えてもいい」と答える','「そっか。それも、言っていいんだ」\n\n何も話さない選択も、相手へ伝える言葉になった。','piece_letter_refusal',['boundary'],'今日は話さないという希望を伝えられると確かめた。')],{min:29,req:()=>thread('letter')==='kept'});
-add('letter_prepare_person','gate','子どもの話を聞く人について尋ねる','話す席の準備',()=>`巡回の人はすぐに頷いた。
-
-「朝の人に、話の途中で止まれる場所が必要だと伝えておきます。聞き手の希望はありますか？」
-
-本人が決めていないことと、決めてほしいことは別にしておける。`,[
- pathOpt('本人が選べる聞き手を用意してもらう','「確認します」と答えが返った。いまいる人だけで決める話ではなくなった。','piece_listener_options',['handoff'],'子どもが聞き手を選べる可能性を、朝の担当へ渡した。'),
- pathOpt('途中で止まっても話を続けられると伝える','「それは大事ですね」\n\n急いで結論を出さない朝が、少しだけ準備された。','piece_listener_pause',['handoff'],'途中で話を止められる希望を、朝の担当へ渡した。')],{min:37,req:()=>piece('letter_receiver')||piece('letter_refusal')||piece('letter_margin')||piece('letter_distinct')});
-
-add('line_compare','sign','連絡票の日付を見比べる','二枚の間',()=>`夜間の連絡票は二枚重なっていた。
-
-上の新しい紙には「まず今夜の安全を確認し、本人の希望と未確認を分ける」とある。
-
-下の古い紙に、廃止された番号が残っている。急ぎの人が見つけられるようにするのは、今夜だけの仕事ではない。`,[
- pathOpt('使わない番号に、古い案内であると添える','表示の権限は巡回の人に確認し、見間違えないよう控えを置いた。','piece_line_warning',[],'古い番号が誤って使われないよう、巡回の人に伝える準備をした。'),
- pathOpt('新しい連絡先を改めて記録する','窓口名と更新日を、自分の覚え書きに残した。','piece_line_date',[],'連絡先の更新日を確認した。')],{min:28,req:()=>['verified','connected'].includes(thread('line'))});
-add('line_callback','gate','巡回の人に連絡が届いたか確かめる','電話の向こうと、こちら',()=>`巡回の人が携帯電話をしまった。
-
-「担当から返事がありました。今夜の確認は、こちらと分けてやります」
-
-${piece('line_warning')?'古い番号のことを伝えると、「貼り替えをお願いしておきます」と答えた。':'夜間連絡先の掲示は、朝にも確認するそうだ。'}
-
-連絡したつもりと、実際に受け取られたことは違う。`,[
- pathOpt('誰が朝の確認を受けるか尋ねる','担当者の引継ぎ先を、巡回の人が確かめた。連絡先が一人に集中しなくなった。','piece_line_owner',['handoff'],'朝の受け取り先を確認した。'),
- pathOpt('まだ確認されていないことを伝える','「そこは未確認、と記録します」\n\n曖昧なままにするのではなく、未確認とした。','piece_line_unknown',['handoff'],'未確認事項を、未確認として次の人へ渡した。')],{min:33,req:()=>thread('line')==='connected'});
-add('line_child_says','waiting','連絡後、子どもの希望をもう一度聞く','伝えたあとに変わること',()=>`「電話、した？」
-
-子どもの声は、責めるようには聞こえなかった。
-
-あなたが伝えた範囲を説明すると、子どもはしばらく黙った。
-
-「あとから、言い直してもいい？」
-
-話したことを伝えたら、もう変えられないわけではない。`,[
- pathOpt('訂正できることを、担当へ確かめる','「できます。本人の話を聞いて、更新します」と返事があった。','piece_line_correction',['listener'],'連絡後でも本人の希望を訂正できると確認した。'),
- pathOpt('いまは決めず、朝の人と話してもらう','「じゃあ、それで」\n\n子どもは毛布の端を持ち直した。','piece_line_morning',['boundary'],'希望の言い直しを朝に残した。')],{min:38,req:()=>thread('line')==='connected'});
-
-add('self_clock','edge','三番線の先と、自分の切符を見る','戻るという言葉',()=>`ホームの端から、町の時計台が小さく見えた。
-
-ポケットの切符には、まだ行き先がない。
-
-ここへ来た理由を思い出そうとしても、浮かぶのは誰かを待っていたような感覚だけだ。記憶か、今夜作った想像かは、わからない。`,[
- pathOpt('確かなことと、想像したことを分ける','確かなことは、あなたが今ここにいること。想像は、誰かを探していたのかもしれないこと。線を引けただけ、少し楽になった。','self_fact',['self'],'自分のことについて、確かなことと想像を分けた。'),
- pathOpt('答えを求めず、ホームを引き返す','名前をつけなくても、足を動かすことはできる。あなたは待合室へ戻った。','self_walk',['self'],'行き先が決まらないまま、駅へ戻ることにした。')],{min:21});
-add('self_voice','phone','自分も誰かに話せるか考える','自分を数に入れる',()=>`受話器には、夜の冷たさが残っている。
-
-子どもには、困ったら誰かに聞いてもらえると話した。でも、あなた自身は今夜のどこにいるのだろう。
-
-あなたが何者かは、まだわからない。けれど、困っているかどうかを確かめるのに、身分証は必要ない。`,[
- pathOpt('朝に、自分のことも話してみようと決める','答えではなく、次に取る行動がひとつできた。','self_ask',['self'],'朝には自分も話を聞いてもらいたいと思った。'),
- pathOpt('今は、ここにいた時間だけ覚えておく','思い出は切符の余白に収まらない。それでも、確かに手の届くところにあった。','self_remember',['self'],'自分の来歴は決めず、今夜の時間を覚えることにした。')],{min:32,req:()=>piece('self_fact')||piece('self_walk')||has('self')});
-add('self_other','waiting','子どもに自分のことを訊かれる','あなたの行き先',()=>`子どもは、あなたを見上げた。
-
-「ところで、あなたはどうするの？」
-
-あなたが自分の切符を見せると、子どもは不思議そうに眺めた。
-
-「じゃあ、私が決めちゃだめだよね」
-
-あなたは頷いた。`,[
- pathOpt('「うん。私も考えてみる」と答える','「そうだよね」\n\nその子は、自分だけが迷っているのではないと知った。','self_equal',['listener'],'互いの行き先を、互いに決めないことにした。'),
- pathOpt('「今はここにいる」と答える','「そっか」\n\n子どもは、それだけ言って窓を見た。','self_now',['sat'],'行き先がなくても、今ここにいることを伝えた。')],{min:41,req:()=>piece('self_ask')||piece('self_remember')});
-
-add('night_revisit','waiting','夜の途中で、変わったことを確かめる','同じ部屋、違う夜',()=>`はじめに来たときと、待合室は少し違っている。
-
-${['shared','helped','left'].includes(thread('cold'))?'毛布が使えるところに置かれた。':'暖房の音が止まっている。'}
-
-${['note','confirmed','given','kept'].includes(thread('letter'))?'紺色の袋のことを、子どもが自分の言葉で話した。':'紺色の袋は、まだその子の膝にある。'}
-
-${thread('line')==='connected'?'今夜の担当には、すでに連絡が届いている。':'連絡を誰が受けたかは、まだ確かではない。'}
-
-同じ場所でも、したことと、しなかったことが残る。`,[
- pathOpt('子どもが今ほしいものを、もう一度聞く','「今は、ちょっと静かにしたい」\n\n夜が進めば、必要なことも変わる。','piece_night_quiet',['listener'],'子どもに、今は静かにしたいという希望があると知った。'),
- pathOpt('部屋に必要なものを整え、席を離れる','毛布と紙コップの場所を確かめ、あなたは少し外へ出た。','piece_night_ready',[],'待合室を整え、次に来る人が使えるようにした。')],{min:34,req:()=>S.seen.includes('waiting')});
-add('last_handoff','gate','朝の担当へ、今夜の未完了を渡す','朝になってから始まること',()=>`朝の担当は、見知らぬ誰かに「大丈夫でしたか」と聞くより先に、記録を確かめた。
-
-${piece('cold_separated')||piece('cold_delegated')?'設備と待つ場所の問題は分けて渡されている。':'暖房と今夜の居場所について、朝から確かめ直すことになった。'}
-
-${piece('listener_options')||piece('listener_pause')?'子どもが話せるよう、聞き手と時間を調整している。':'子どもが話したいこと、まだ話したくないことは、本人に聞くことになった。'}
-
-${piece('line_owner')||piece('line_unknown')?'連絡は受取先と未確認を分けて残った。':'連絡の受け取り先は、朝の担当が確認を続けている。'}
-
-「あなたが全部を説明しなくても大丈夫です。ここからは、こちらも持ちます」`,[
- pathOpt('わからないことは、わからないと伝える','「それで構いません。確認先を残しておきます」\n\nあなたは、今夜のすべてを知る者ではなかった。','piece_handoff_unknown',['handoff'],'未確認を未確認として朝へ渡した。'),
- pathOpt('本人が話せるよう、少し離れる','子どもは、朝の担当に向き直った。あなたは二人の会話を奪わなかった。','piece_handoff_space',['handoff'],'子どもが自分で話せる距離を選んだ。')],{min:44,req:()=>done('night_revisit')||piece('line_owner')||piece('listener_options')||piece('cold_separated')});
-
-// v0.7: NPC initiated small stories. Requests become available regardless of where
-// the player spent the earlier night. Choices open later actions; none is required.
-add('npc_child_start','waiting','子どもの呼ぶ声に応える','いま答えなくても',()=>`あなたが待合室を通りかかると、子どもが自分から声をかけた。
-
-「ねえ、頼んでもいい？」
-
-紺色の袋を膝に置いたまま、しばらく言葉を探す。
-
-「朝、話してる途中でやめちゃったら……怒られないか、聞いてきてほしい。でも、私が何を話すかは言わなくていい」
-
-子どもは、確かめてほしいことと、知られたくないことを自分で分けていた。`,[
- pathOpt('「聞き手に確かめてくる」と引き受ける','「ありがとう。私の名前とかは、まだ言わなくていいから」\n\nあなたは頷き、聞いてよい範囲だけを覚えた。','piece_child_request',[],'子どもから、話を途中で止めてもよいか確かめるよう頼まれた。'),
- pathOpt('「今は難しいけれど、他の人に頼めるよ」と答える','子どもは考えてから頷いた。\n\n「じゃあ、巡回の人に、自分で言ってみる」\n\n誰かに断られたことが、そのまま行き止まりにはならなかった。','piece_child_self',[],'頼み事を引き受けられないと伝えると、子どもは別の相手を考えた。')
-],{min:15,req:()=>!done('npc_child_start')});
-add('npc_child_ask','gate','朝の聞き手に確かめる','聞いてよいことだけ',()=>`巡回の人は、何か書き取ろうとして、ペンを止めた。
-
-「内容じゃなくて、話の途中で止まってもいいか、ですね」
-
-「はい。誰が何を話すかまでは、まだ聞いていません」
-
-「朝の担当には、本人が区切りを決められるよう相談します。聞き手を変える必要があるときも、そこから考えます」
-
-返ってきたのは無条件の約束ではなく、担当が実際にできることだった。`,[
- pathOpt('聞き手が誰かも確認する','「今夜のうちに確認して、朝の人と一緒に本人へお伝えします」\n\n言葉を届ける先が、具体的になった。','piece_child_checked',[],'子どもの頼みを守り、聞き手と中断の扱いを確認した。'),
- pathOpt('本人が確認したいなら同席できるか尋ねる','「大丈夫です。私だけで決めず、朝の担当にも確認します」\n\n本人が後から聞き直せる余地ができた。','piece_child_withstaff',[],'朝、子ども自身が聞き手と相談できるように確認した。')
-],{min:25,req:()=>piece('child_request')&&!done('npc_child_ask')});
-add('npc_child_answer','waiting','確かめたことを子どもに伝える','届いた約束ではなく',()=>`待合室の隅で、子どもが顔を上げる。
-
-あなたは聞いてきたことだけを伝えた。「途中で止めたいときは言っていい。誰が聞くかも朝の人と確かめる」
-
-子どもはしばらく考えてから、言い直した。
-
-「最初から全部話す、とはまだ言えない。でも、途中で止まってもいいなら、少し話したい」
-
-お願いの内容は、頼んだ時と少し変わっていた。`,[
- pathOpt('「その言い直しも朝に伝えよう」と答える','子どもは、今度は自分の手でメモを書いた。\n\n「途中で止まるかも。最初は少しだけ」\n\nあなたは、本人の字をそのまま残した。','piece_child_answer',['listener'],'聞き手へ確かめた結果を渡し、子ども自身が希望を言い直した。'),
- pathOpt('「朝の人に、自分で聞いてもいい」と答える','「うん。自分で聞いてみる」\n\nあなたの役目はそこで一度終わった。','piece_child_answer',['boundary'],'子どもが朝の人へ自分で聞き直すことを選んだ。')
-],{min:29,req:()=>piece('child_checked')||piece('child_withstaff')});
-add('npc_child_own','waiting','巡回の人と話した子どもに会う','自分で頼んだこと',()=>`子どもが窓際から戻ってきた。
-
-「さっき、自分で聞いてみたの。最後まで話せなかったらって」
-
-「巡回の人は、朝の人と確認するって。だから私も、朝になったらもう一回聞く」
-
-あなたに頼まなかった道にも、子どもの行動があった。`,[
- pathOpt('「自分で聞けたんだね」と答える','「うん。少し怖かったけど」\n\n子どもは袋を椅子に置いた。','piece_child_self_done',['listener'],'子どもが自分で巡回の人へ希望を確かめたことを知った。'),
- pathOpt('「話せない日もあるよ」と答える','「そうだね。でも、聞くだけなら今できた」\n\n今夜できたことを、子どもは自分で数えていた。','piece_child_self_done',[],'子どもが自分で確かめたことを、急いで評価せずに聞いた。')
-],{min:30,req:()=>piece('child_self')&&!done('npc_child_own')});
-
-add('npc_patrol_start','gate','巡回の人からの頼みを聞く','巡回の人も一人ではない',()=>`改札へ戻ると、反射材の上着を着た巡回の人が、控えの紙を二枚持っていた。
-
-「設備を確認してから夜間担当へ連絡します。もし駅前の店に寄るなら、新しい連絡案内が掲示されているかだけ、見てもらえませんか」
-
-子どもの名前も事情も伝える必要はないという。
-
-「難しければ、私が後で確かめます。そちらの都合もあるでしょうから」`,[
- pathOpt('掲示の確認だけ引き受ける','あなたは、確かめるのは案内の日付だけだと念を押した。\n\n巡回の人は「それで十分です」と頷いた。','piece_patrol_accept',[],'巡回の人から、駅前の連絡案内の確認を頼まれた。'),
- pathOpt('今夜は引き受けないと伝える','「わかりました。別の人を探します」\n\n断っても、巡回の人は責めなかった。','piece_patrol_other',[],'頼みを引き受けず、巡回の人が別の方法で確かめることになった。')
-],{min:27,req:()=>!done('npc_patrol_start')});
-add('npc_patrol_shop','slope','駅前の店の掲示を見に行く','店じまいまで',()=>`駅前の店には、まだ灯りが残っていた。
-
-「連絡案内？　うん、店のガラスに貼ってあるよ。新しいのをもらったから」
-
-店の人は、濡れた手を布巾で拭った。
-
-「でもね、明日は早いから、もう閉めるんだよ。今夜ぜんぶ片づけるわけにはいかない」
-
-店の人にも、帰る場所と時間があった。`,[
- pathOpt('更新日を確かめ、巡回の人へ伝える','店の人と一緒に日付を見た。以前の紙とは違う。\n\n「じゃ、駅の人にもお願いね」と店の人が言った。','piece_patrol_checked',[],'駅前の店に新しい夜間連絡案内があることを確認した。'),
- pathOpt('「店を閉めて大丈夫」と伝え、控えを確認する','「ありがとう。あとは駅の人へ伝えてくれると助かる」\n\n案内の確認を終えると、店の人は鍵を取り出した。','piece_patrol_checked',['shop'],'店の人が店を閉められるよう、掲示だけ確かめた。')
-],{min:28,req:()=>piece('patrol_accept')});
-add('npc_patrol_report','gate','掲示の確認を巡回の人に返す','確かめたという返事',()=>`改札に戻ると、巡回の人が携帯を閉じるところだった。
-
-あなたは駅前の店の掲示と更新日を伝えた。
-
-「確認できたんですね。では、こちらの古い案内も朝の担当へ渡しておきます」
-
-頼まれたことは、調べただけでは終わらなかった。聞いた人へ、返してはじめて受け渡しになる。`,[
- pathOpt('どの掲示を更新するか、指差して確認する','「駅の分は私から朝の担当に引き継ぎます」\n\n紙の上に、細い線で印がついた。','piece_patrol_reported',['handoff'],'駅前の掲示を確かめ、その結果を巡回の人へ戻した。'),
- pathOpt('他の連絡先のことは巡回の人に任せる','巡回の人は、新しい案内の名前を書き留めた。\n\n「ここから先はこちらの仕事です」','piece_patrol_reported',[],'確認結果を渡し、今後の更新は担当者へ任せた。')
-],{min:30,req:()=>piece('patrol_checked')});
-add('npc_patrol_other_way','gate','巡回の人が調べた結果を聞く','断ったあとも',()=>`「店の掲示は別の方が確かめてくれました」と巡回の人は言った。
-
-あなたが頼みを断った後も、仕事は消えなかった。別の人へ渡って、戻ってきたのだ。
-
-「ありがとうございます、気にしてくれて」
-
-「断ってよかったのかな」という問いに、誰かが正解をつけることはない。`,[
- pathOpt('ほかに未確認のことがあるか聞く','「今夜はこれで大丈夫。朝の担当には私から伝えます」\n\n巡回の人は、駅舎へ戻っていった。','piece_patrol_done',[],'自分が引き受けなかった頼みも、別の人の手で進んだことを知った。')
-],{min:38,req:()=>piece('patrol_other')});
-
-add('npc_visitor_start','platform','白い手袋について尋ねられる','白い手袋の持ち主',()=>`ホームへ戻ると、肩に雨粒を残した若い人が立っていた。
-
-「すみません。小さな白い手袋、落ちていませんでしたか」
-
-言いながら、その人は自分の鞄をもう一度開ける。
-
-「預かったものなんです。朝、返す約束で。返すのが遅くなったら、また待たせてしまう」
-
-子どものことは何も知らない、別の夜を過ごしている人だ。`,[
- pathOpt('待合室の落とし物を調べてみる','「助かります。私はホームをもう一度見ます」\n\nあなたたちは別の場所を探すことにした。','piece_visitor_help',[],'白い手袋を探す人と、場所を分けて探すことにした。'),
- pathOpt('落とし物は巡回の人へ聞けると伝える','「そうですね。まずは聞いてみます」\n\nその人は改札の方へ向かった。','piece_visitor_staff',[],'手袋を探す人へ、巡回の人に確認する道を伝えた。')
-],{min:34,req:()=>!done('npc_visitor_start')});
-add('npc_visitor_find','waiting','椅子のそばの手袋を調べる','座席の下に',()=>`待合室の椅子の下に、白いものが落ちていた。
-
-小さな手袋だ。片方だけ、乾きかけている。
-
-${thread('letter')==='kept'?'紺色の袋を持つ子どもが、ちらりとこちらを見た。':'子どもは手袋を見つめ、また自分の袋に視線を落とした。'}
-
-「それ、さっきの人のかな」
-
-まだ持ち主だと確かめたわけではない。`,[
- pathOpt('特徴を確認して、巡回の人に預ける','巡回の人は、色と大きさを確かめてから落とし物として受け取った。\n\n手袋を探す人にも確認するという。','piece_visitor_found',['handoff'],'白い手袋を見つけ、持ち主の確認を巡回の人へ渡した。'),
- pathOpt('拾った場所だけを本人に伝える','その人が自分で確かめに来られるよう、場所を伝えることにした。','piece_visitor_found',[],'手袋の見つかった場所を、探している人へ伝えることにした。')
-],{min:35,req:()=>piece('visitor_help')});
-add('npc_visitor_return','platform','手袋のその後を聞く','返せるか、まだわからない',()=>`若い人は、白い手袋を手にしていた。
-
-${piece('visitor_found')?'「確かめてくれて、ありがとうございます」':'「巡回の人と一緒に探したら、見つかりました」'}
-
-「返す約束をしたけど、朝になったら相手が受け取れるかは、まだわかりません」
-
-少し笑って、続ける。
-
-「でも、今日はまず、なくしたことを謝れます。返せるかどうかは、それからですね」
-
-あなたと、この人と、子どもの夜は、同じ答えへ集まらない。`,[
- pathOpt('「約束の続きを話せるといいですね」と答える','「はい。話してみます」\n\nその人は、手袋を鞄の上の方へしまった。','piece_visitor_returned',[],'手袋を探す人が、自分の約束をもう一度引き受けた。'),
- pathOpt('「急いで答えを決めなくても」と答える','「そうですね。返すつもりだった、というだけでもまず伝えます」\n\nその人はホームの端から戻っていった。','piece_visitor_returned',['boundary'],'返せるか不明なままでも、話し始められると伝えた。')
-],{min:37,req:()=>piece('visitor_found')||piece('visitor_staff')});
-add('npc_visitor_child','waiting','手袋を探す人の話を子どもとする','返すということ',()=>`子どもが、紺色の袋に触れて言った。
-
-「さっきの人、見つかったんだ」
-
-${thread('letter')==='given'?'「私も、紙は渡したけど。言い足りないことはまだあるんだ」':'「私はまだ、これを誰かに渡すって決められない」'}
-
-「渡すのと、話すのって、同じこと？」
-
-あなたは、自分が今夜見たことを思い出す。`,[
- pathOpt('「渡してから話し直すこともある」と答える','「じゃあ、あとで直してもいいんだ」\n\n子どもは、袋を机の上へ置き直した。','piece_visitor_echo',['listener'],'物を渡すことと、話を続けることは別だと子どもと考えた。'),
- pathOpt('「渡さないで、話すこともある」と答える','「うん。今は話すだけにするかもしれない」\n\n子どもは自分の言葉で言い直した。','piece_visitor_echo',['boundary'],'何も渡さずに話す選択について、子どもと考えた。')
-],{min:39,req:()=>piece('visitor_returned')&&thread('letter')!=='unseen'});
-
-// v0.8 — 「発見→判断→他者の行動→後から帰ってくる結果」の短い連鎖。
-// どの章にも必須条件を置かない。選ばなかった出来事には別の人の仕事が残る。
-add('echo_after_correction','waiting','言い直したい言葉を受け取る','さっきの言葉、そのあと',()=>`子どもが窓際からあなたを呼び止めた。
-
-「さっきの『言い直せる』っていうの。あれ、ちゃんと本当だったんだね」
-
-${piece('line_correction')?'担当の人が、訂正できると確かめてくれた。':piece('child_answer')?'朝の聞き手に、途中で止めてもいいと確認できた。':'白い手袋を探す人が、約束の続きを話せると言っていた。'}
-
-「じゃあ、もう一回、言ってもいい？」
-
-あなたは頷く。
-
-「すぐ帰すことを決めないでほしい。あと……最初に誰が聞くのか、知りたい」
-
-この二つの希望は、どちらも今ここでかなえてあげられる約束ではない。でも、次へ渡す準備はできる。`,[
- pathOpt('本人の言葉を、そのまま二行で書いてもらう','子どもは紙を引き寄せた。「すぐ決めない」「聞く人を知りたい」と、自分の字で書く。\n\nあなたはその字を直さなかった。','piece_echo_note',['listener'],'子どもが、朝へ渡したい二行を自分で書いた。'),
- pathOpt('「朝の人に、あなたが直接言おう」と提案する','「うん。いまは練習だけしてみる」\n\n子どもは一度深呼吸して、短い二つの文を声にした。','piece_echo_voice',['boundary'],'子どもは朝の聞き手に、自分の声で話す準備をした。')
-],{min:40,req:()=>!done('echo_after_correction')&&(piece('line_correction')||piece('child_answer')||piece('visitor_echo'))});
-add('echo_check_note','counter','本人が書いた二行の扱いを相談する','渡していいもの',()=>`古い窓口で、子どもは自分が書いた二行を見直した。
-
-「これ、明日の人に渡してもいい。でも、ほかのことまで、勝手に書かないでね」
-
-あなたは、紙に本人が書いたこと以外がないか確かめる。
-
-子どもは、紙の下を指して言った。
-
-「あとで変えたくなるかもしれないから、空けておいて」`,[
- pathOpt('二行だけを朝の担当へ渡す準備をする','渡すものと、まだ渡さないものがはっきりした。子どもは紙を自分の手に持っていた。','piece_echo_written',['handoff'],'二行だけを渡し、今後の訂正は本人へ確認する準備をした。'),
- pathOpt('渡さずに、本人が朝まで持つことにする','「じゃあ私が持ってる。渡すかは朝、また決める」\n\n子どもは紙を袋に戻した。','piece_echo_keep',['boundary'],'子どもは二行の紙を、渡さずに朝まで持つことにした。')
-],{min:41,req:()=>piece('echo_note')});
-add('echo_prepare_voice','gate','本人が話すための席を頼む','話す人の席',()=>`改札で巡回の人に会った。あなたは、子どもが自分の声で話したいと考えていることだけを伝える。
-
-「聞き手が誰かを、先に本人へ伝えることはできますか」
-
-「朝の担当と一緒に確かめます。本人が話せる場所も必要ですね」
-
-相手は、子どもが何を言うかまでは尋ねなかった。`,[
- pathOpt('本人が話すまで代わりに説明しないと伝える','「わかりました。確認事項は、本人の言葉を聞いてからにしましょう」\n\n朝の椅子を一つ空けてもらえた。','piece_echo_speaking',['handoff'],'本人が話し始められるよう、聞き手と席の準備を頼んだ。'),
- pathOpt('話せなくなったときは中断できるようお願いする','「朝の担当へ、その希望を伝えます」\n\n言葉が止まっても席が消えないように頼んだ。','piece_echo_pause',['listener'],'話の途中で中断できるよう、朝の聞き手へ伝えた。')
-],{min:42,req:()=>piece('echo_voice')});
-
-add('cross_handoffs','gate','重なった引き継ぎを整理する','二枚の控え',()=>`巡回の人の手元には、二枚の控えがあった。
-
-${piece('patrol_reported')?'一枚は、あなたが駅前の店で確認した連絡案内。':'一枚は、駅前の店から届いた連絡案内。'}
-
-${piece('line_owner')||piece('line_unknown')?'もう一枚は、夜間窓口からの引き継ぎメモ。':'もう一枚は、今夜の安全確認を書き留めたメモ。'}
-
-巡回の人が言う。
-
-「どちらも朝へ渡します。でも、同じ人へ一度に全部渡すと、かえって見落とします。先に何を確かめましょうか」
-
-どちらを選んでも、残った用件は別の担当に渡る。`,[
- pathOpt('古い案内を誰が貼り替えるか確かめる','「掲示の管理は朝の担当です。名前を控えておきます」\n\n誰が動くか、空欄ではなくなった。','piece_cross_fix',['handoff'],'古い連絡案内の貼り替え担当を明確にした。'),
- pathOpt('店の人がいつまで対応できるかを伝える','「店の人に夜通し頼むわけにはいきませんね。朝の担当が続けます」\n\n町の人にも、休む時間が戻った。','piece_cross_shop',['boundary'],'駅前の店から朝の担当へ、連絡案内の確認をつなぐことになった。')
-],{min:42,req:()=>!done('cross_handoffs')&&(piece('patrol_reported')||piece('patrol_done')||piece('line_owner')||piece('line_unknown')||piece('line_warning'))});
-add('cross_fix_sign','sign','古い案内の扱いを確かめる','貼り替える人の名前',()=>`新旧の連絡案内が重なった掲示板。
-
-巡回の人は、その前で朝の担当に電話した。
-
-「古い番号が読めてしまうのが問題です。今日のうちに、そちらで確認してもらえますか」
-
-担当者の返事が聞こえる。
-
-「確認します。貼り替えは掲示の管理者と行います」
-
-あなたが掲示を剥がして解決したわけではない。貼り替える人に、具体的な仕事が渡った。`,[
- pathOpt('更新が済んだら、使える案内を確認すると約束する','「朝の確認事項に加えます」\n\n今夜の発見が、次の仕事になった。','piece_handoff_fix',[],'古い案内の貼り替え担当と確認方法が決まった。'),
- pathOpt('「確認できたか」を朝の担当へ残す','「終わったと思い込まず、結果を確認します」\n\nその短い一行が、控えに書き足された。','piece_handoff_fix',[],'案内更新の完了確認を朝の担当へ残した。')
-],{min:43,req:()=>piece('cross_fix')});
-add('cross_shop_morning','slope','店じまいした人の伝言を聞く','明け方の伝言',()=>`駅前の店はもう暗い。シャッターの脇に、巡回の人宛ての小さなメモが残っていた。
-
-「朝の担当が見に来るなら、掲示の写しを確認してください。店は朝になってから開けます」
-
-あなたが夜通し店を開けてもらう必要はなかった。
-
-巡回の人にメモを伝えると、店への再訪は朝の業務になった。`,[
- pathOpt('店の人が休めるよう、朝の確認を巡回へ渡す','「こちらで調整します」\n\n伝言を受け取った人の名前が控えに残った。','piece_handoff_shop',[],'町の人が休めるよう、朝の掲示確認を担当へ渡した。')
-],{min:44,req:()=>piece('cross_shop')});
-
-// At dawn: different actionable scenes appear, not merely different lines of narration.
-add('morning_with_echo','waiting','朝に話したいことを、もう一度確かめる','朝を待つ、話す席',()=>`東の窓が薄く明るくなった。
-
-子どもはあなたを見た。
-
-${piece('echo_written')?'「この二行は、渡していい。でも、あとから言い直せるようにしたい」':piece('echo_speaking')?'「私は自分で話してみる。聞く人が誰か、先に知りたい」':piece('echo_pause')?'「途中でやめたくなったら、やめてもいいんだよね」':'「まだ、渡すかどうかは朝に決めたい」'}
-
-朝の担当が、改札の方に到着したらしい。
-
-何を伝えるかは、まだ本人に選び直せる。`,[
- pathOpt('本人が言い直した内容を、最初の希望と分けて伝える','担当者は、以前の希望を消さず、新しい希望を別に書き留めた。\n\n「本人にもう一度確認します」','piece_morning_correction',['handoff'],'子どもの言い直しを、朝の担当へ別の希望として伝えた。'),
- pathOpt('本人が話すまで、隣の席を空けておく','「私から、言ってみるね」\n\n子どもは立ち上がり、朝の担当へ向き直った。','piece_morning_beside',['listener'],'子どもが自分で伝えるため、隣の席で待った。')
-],{min:46,req:()=>piece('echo_written')||piece('echo_keep')||piece('echo_speaking')||piece('echo_pause')});
-add('morning_no_echo','waiting','まだ話していないことを確かめる','朝になっても残るもの',()=>`まだ何も決まっていないことがあった。
-
-紺色の袋は、子どもの手元にある。
-
-${thread('line')==='connected'?'今夜の担当と連絡はついた。でも、あなたが子どものすべてを知っているわけではない。':'巡回の人は朝の担当を迎える準備をしている。あなたが知らないことまで埋める必要はない。'}
-
-子どもがあなたに訊く。
-
-「朝になったら、すぐ話さなくちゃだめ？」`,[
- pathOpt('知らないことは「知らない」と朝の人へ伝える','朝の担当は頷いた。「本人に確かめます。ここから聞く仕事は私たちが持ちます」','piece_morning_unknown',['handoff'],'わからないことをわからないまま、朝の担当へ渡した。'),
- pathOpt('「話すまで、少し待ってもいいと思う」と答える','子どもは頷いた。\n\n朝の担当は、急がせずに空いた椅子へ座った。','piece_morning_pause',['listener'],'子どもが話し始めるタイミングを、本人へ返した。')
-],{min:46,req:()=>!piece('echo_written')&&!piece('echo_keep')&&!piece('echo_speaking')&&!piece('echo_pause')});
-
-// 意味のある「待つ」は何度でも可能。出来事の見逃しを許容する。
-add('wait','*','少し待つ','何もしない間にも',()=>{
- const ph=phase();
- const v=[
- '風が吹いて、止んだ。改札の方から誰かの足音が近づき、また遠ざかった。\n\nあなたが何も話さない間にも、夜は続いている。',
- '誰かが待合室の明かりを確かめ、足音を立てずに去っていった。子どもは自分の場所を少し変えた。\n\nまだ言葉にならないことは、言葉にならないままでいい。',
- '駅前の店のシャッターが下りる音がした。離れたところで、短い電話の声が聞こえた。\n\nあなたが見ていない場所にも、夜を受け取る人がいる。',
- '少しだけ、空の色が変わった。駅は朝へ向かっている。誰かが来るのを待ちながら、誰かはもう準備をしている。\n\n時計は、何も催促しなかった。'
- ];return v[ph];},[],{repeat:true,memo:()=>''});
-
-// 最終行動。条件によって内容が変わるが、到達条件はやさしい。
-add('dawn','gate','朝の人に会いに行く','朝の手前',()=>`東の空が白み、改札の外から朝の連絡を受けた人が来た。\n\n${has('handoff')?'これまでの話はすでに次へ届いている。あなたは同じことをすべて繰り返さなくていい。':'子どもの安全を確かめる人が、駅前の連絡から来たらしい。あなたが全部を知らなくても、話は始められる。'}\n\n${piece('morning_correction')?'子どもは、最初の言葉のあとに言い直した希望が残っていることを確かめた。':piece('morning_beside')?'子どもは、あなたに代わって話してもらうのではなく、自分の声を選んだ。':piece('morning_unknown')?'あなたが知らなかったことは、朝の人が直接本人に尋ねることになった。':piece('morning_pause')?'子どもは、朝の人が来てもすぐに話さなくていいと確かめた。':'子どもは、自分で何を話すかを決めようとしている。'}\n\nあなたの切符は、まだ白い。\n\nこの先をどう過ごすかを、あなた自身も選べる。`,[
- {...opt('子どもの言葉を、朝の人へ渡す','',[],'朝の人へ子どもの言葉を渡すことを選んだ。'),end:'handover'},
- {...opt('もう少し、隣で待つ','',[],'朝が来ても隣にいることを選んだ。'),end:'stay'},
- {...opt('自分の帰り道を探しに、改札を出る','',[],'誰かに引き継ぎ、改札を出ることを選んだ。'),end:'leave'},
- {...opt('自分のことも、誰かに相談したいと伝える','',[],'自分のことを誰かに話してみることを選んだ。'),end:'speak'}
-],{min:48});
-
-const END={
- handover:{name:'朝へ渡された言葉',reflection:'言葉を預かることと、代わりに決めることは違った。',text:()=>`子どもは、朝の担当に向かって、自分の言葉で話しはじめた。途中で何度も止まり、そのたびに相手は待った。\n\n${has('asked')?'先に約束していたことだけが、最初に伝えられた。':'何を話すかは、今ここで本人に確かめてから決めた。'}\n\n「明日、自分から話すつもりだったんです」\n\n誰も、帰る場所をここで決めなかった。まず今日、安全に過ごせるようにすること。次に、明日誰が話を聞くのかを確かめること。話の順番は、分かれていった。\n\n三番線には列車が来なかった。\n\nあなたの切符は白いままだったが、いま自分の手から離れたものが何かは、少しわかった。`},
- stay:{name:'まだ座れるベンチ',reflection:'朝になっても、待つことを選べる。',text:()=>`朝の担当が来て、子どもの話を聞き始める。あなたは少し離れて、ベンチの端に座った。\n\n${has('sat')?'夜の間にも座った場所だった。':'初めて腰を下ろす場所だった。'}\n\n「もう、行ってもいいよ」\n\n子どもが先にそう言った。あなたは頷いた。でも、すぐには立ち上がらなかった。\n\n待つことは、誰かを引き止めることではない。待たずに帰ることも、見捨てることではない。\n\nそれぞれが、自分の時間を決められる。今夜は、そのことだけを覚えておきたかった。`},
- leave:{name:'改札の向こうの朝',reflection:'誰かに渡せたなら、離れる道もある。',text:()=>`朝の担当が子どものそばに座った。駅前から来た人が、必要な連絡をもう一度確かめている。\n\nあなたは、そこまで見届けてから改札を抜けた。\n\n${has('self')?'切符の白い欄を、指で軽くなぞる。まだ行き先は書けない。':'ポケットに切符があったことを、改札を出てから思い出す。'}\n\n帰れない人かもしれない。帰り道を知らないだけかもしれない。\n\n誰かを助けたから自分の謎が解けた、ということにはならなかった。\n\nそれでも坂を降りると、パン屋の灯りが見えた。町の朝は、あなたを待たずに始まっていた。`},
- speak:{name:'次に話す人',reflection:'今夜、聞く側だった人にも、聞いてもらう権利がある。',text:()=>`あなたは、朝の担当に声をかけた。\n\n「私も、ここへどう来たのか、よくわからないんです」\n\n相手は、不思議そうな顔をしたあと、すぐに答えを出さなかった。\n\n「わかるところから、聞いてもいいですか」\n\nあなたは頷く。子どもは少し離れたところで、別の人と話していた。二つの会話は、それぞれの時間で進む。\n\n白い切符を見せても、何もわからないかもしれない。\n\nでも、わからないまま、誰かと話し始めることはできた。`}
-};
-function finish(kind){const e=END[kind];if(!e)return;const snapshot={date:new Date().toLocaleDateString('ja-JP'),kind,name:e.name,steps:S.tick,visited:[...S.seen],journal:S.journal.slice(),flags:{...S.flags},threads:{...S.threads},pieces:{...S.pieces}};archive.nights.unshift(snapshot);archive.nights=archive.nights.slice(0,25);store(ARCH,archive);S.ending=kind;S.mode='ending';S.moment=null;clear(SAVE);render();}
-function start(){Sound.gesture();S=fresh();save();render()}
-function home(){S={mode:'title'};render()}
-function resume(){Sound.gesture();const o=read(SAVE);if(o&&o.mode==='play'&&o.flags&&Array.isArray(o.done)&&P[o.place]){S=o;updateCalls();render()}else start()}
-function exportText(){const lines=['灯坂駅の夜 v0.8 — 今夜の記録（非正本ゲーム）',`歩いた時間：${S.tick}場面`,`歩いた場所：${S.seen.map(p=>P[p].name).join('、')}`,''];S.journal.forEach(j=>lines.push(`[${j.at}] ${j.line}`));lines.push('','【今夜の出来事】',...scenarioLines());lines.push('','【追加の出来事】', ...S.journal.filter(j=>j.type==='選択'&&j.line).map(j=>'・'+j.line));if(S.mode==='ending')lines.push('','結末：'+END[S.ending].name,'「'+END[S.ending].reflection+'」',scenarioDawn()); const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='灯坂駅の夜_今夜の記録.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
-function e(tag,klass,txt){const n=document.createElement(tag);if(klass)n.className=klass;if(txt!==undefined)n.textContent=txt;return n}
-function button(label,handler,cls='choice'){const b=e('button',cls);b.type='button';b.append(e('span','',label),e('span','arrow','›'));b.onclick=handler;return b}
-function prose(node,content){(content||'').split(/\n\s*\n/).filter(Boolean).forEach(p=>{const el=e('p',p.trim().startsWith('「')?'dialogue':'',p);node.append(el)})}
-function artwork(place){
-const sky=`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b1428"/><stop offset=".75" stop-color="#293b51"/><stop offset="1" stop-color="#394759"/></linearGradient><linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#344655"/><stop offset="1" stop-color="#0d1b26"/></linearGradient><radialGradient id="lamp"><stop stop-color="#f7d99a" stop-opacity=".65"/><stop offset="1" stop-color="#e4b770" stop-opacity="0"/></radialGradient><linearGradient id="window" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#a8b5b7"/><stop offset="1" stop-color="#4c5965"/></linearGradient></defs><rect width="900" height="520" fill="url(#sk)"/><circle cx="736" cy="86" r="26" fill="#f6e3b8" opacity=".75"/>${Array.from({length:18},(_,i)=>`<circle cx="${40+(i*137)%800}" cy="${24+(i*61)%170}" r="${i%4?1:1.7}" fill="#e1e4e3" opacity="${.25+i%3*.15}"/>`).join('')}<path d="M0 265 L106 215 183 244 300 205 417 263 520 213 660 257 780 210 900 249 V520 H0Z" fill="#162537" opacity=".77"/><path d="M0 306 Q150 270 270 310 T540 306 T900 294 V520 H0Z" fill="#101c2a"/>`;
-let part='';
-if(place==='platform') part=`<path d="M0 254 L570 194 900 230 900 250 0 286Z" fill="#172838" stroke="#5f6a71" stroke-width="7"/><rect x="34" y="248" width="9" height="205" fill="#66717a"/><rect x="493" y="215" width="11" height="235" fill="#62707a"/><rect x="854" y="236" width="10" height="217" fill="#5a6876"/><ellipse cx="298" cy="292" rx="155" ry="85" fill="url(#lamp)"/><ellipse cx="691" cy="270" rx="145" ry="73" fill="url(#lamp)"/><rect x="228" y="254" width="15" height="8" rx="3" fill="#ffe2a3"/><rect x="688" y="245" width="15" height="8" rx="3" fill="#ffe2a3"/><path d="M0 346 L900 331 V520H0Z" fill="url(#ground)"/><path d="M0 456L900 392 M0 499L900 431" stroke="#99a3a7" stroke-width="5" opacity=".5"/><path d="M0 472L900 410" stroke="#141922" stroke-width="20"/><path d="M50 449 L740 408" stroke="#a9ad9e" stroke-width="4" opacity=".37"/><rect x="204" y="322" width="188" height="19" rx="3" fill="#a59b80"/><rect x="211" y="344" width="176" height="9" rx="2" fill="#595b60"/><path d="M231 353L219 389 M367 353L379 389" stroke="#676363" stroke-width="9"/><ellipse cx="335" cy="401" rx="44" ry="7" fill="#0a1420" opacity=".5"/><circle cx="308" cy="298" r="20" fill="#152433"/><path d="M286 316 Q315 308 335 326 L340 370 285 368Z" fill="#2c3947"/><path d="M288 364L279 395 M324 367L332 397" stroke="#1c2937" stroke-width="13" stroke-linecap="round"/><rect x="372" y="332" width="30" height="36" rx="5" fill="#384356"/><rect x="382" y="343" width="18" height="2" fill="#a49e8f"/><rect x="570" y="284" width="173" height="56" rx="3" fill="#d1c8b2" opacity=".75"/><text x="586" y="311" font-size="25" font-family="sans-serif" fill="#25394c">灯坂</text><text x="585" y="328" font-size="10" font-family="sans-serif" fill="#415464" letter-spacing="3">HISAKA</text><rect x="733" y="284" width="10" height="56" fill="#9c8f7f"/>`;
-else if(place==='waiting')part=`<rect width="900" height="520" fill="#263645"/><rect x="70" y="58" width="760" height="420" fill="#54606c"/><rect x="101" y="81" width="300" height="236" fill="#15243a" stroke="#978c7b" stroke-width="15"/><rect x="111" y="94" width="280" height="209" fill="#253950"/><path d="M109 212L391 212" stroke="#958a77" stroke-width="10"/><path d="M250 83L250 315" stroke="#958a77" stroke-width="10"/><circle cx="298" cy="182" r="65" fill="url(#lamp)"/><path d="M430 100H780V315H430Z" fill="#676d71"/><rect x="447" y="116" width="317" height="184" fill="#404e5c" stroke="#948e82" stroke-width="6"/><rect x="481" y="148" width="255" height="19" fill="#a6a7a1"/><rect x="526" y="197" width="170" height="87" fill="#626866"/><rect y="405" width="900" height="115" fill="#1b2938"/><path d="M75 425H826" stroke="#75808a" stroke-width="5"/><rect x="143" y="347" width="270" height="22" rx="3" fill="#a0937a"/><path d="M165 365 L151 450 M390 365L406 450" stroke="#6d7176" stroke-width="11"/><rect x="560" y="328" width="125" height="16" rx="2" fill="#a29782"/><path d="M573 344L566 433 M667 344L677 433" stroke="#686d71" stroke-width="10"/><path d="M602 296 V329 M649 297V329" stroke="#879299" stroke-width="5"/><rect x="601" y="267" width="50" height="37" rx="6" fill="#b5b0a4"/><path d="M612 261L640 261" stroke="#d2c7ae" stroke-width="5"/><rect x="698" y="315" width="32" height="24" fill="#e8e2d5"/><rect x="732" y="316" width="23" height="22" fill="#e8e2d5"/><ellipse cx="613" cy="323" rx="98" ry="65" fill="url(#lamp)"/>`;
-else if(place==='phone')part=`<path d="M0 332L900 297V520H0Z" fill="url(#ground)"/><path d="M30 312V128H152V312 M170 312V173H302V312 M740 295V158H890V295" fill="#1c2a38" stroke="#2b3947" stroke-width="8"/><rect x="370" y="127" width="268" height="323" fill="#283e4f" stroke="#7b8a8d" stroke-width="11"/><rect x="396" y="168" width="215" height="229" fill="#bad2c6" opacity=".45" stroke="#d6cdb7" stroke-width="7"/><rect x="397" y="133" width="212" height="34" fill="#d6d9c9"/><text x="503" y="156" text-anchor="middle" font-size="18" fill="#3f585e" font-family="sans-serif" letter-spacing="3">電話</text><rect x="468" y="216" width="73" height="124" rx="4" fill="#425668" stroke="#b2b7aa" stroke-width="5"/><rect x="483" y="230" width="43" height="24" fill="#a7b9ae"/><path d="M489 266 Q475 285 491 296 Q510 307 526 281" stroke="#101e2d" stroke-width="8" fill="none"/><circle cx="503" cy="267" r="8" fill="#182c3f"/><rect x="414" y="402" width="180" height="20" fill="#1c2a33"/><ellipse cx="502" cy="315" rx="207" ry="207" fill="url(#lamp)" opacity=".8"/><path d="M0 475L900 428" stroke="#a4aeb0" stroke-width="4" opacity=".4"/>`;
-else part=`<path d="M0 329L900 294V520H0Z" fill="url(#ground)"/><rect x="0" y="121" width="900" height="223" fill="#243442"/><rect x="0" y="102" width="900" height="31" fill="#344351"/><rect x="46" y="154" width="310" height="161" fill="#17293a" stroke="#727f81" stroke-width="9"/><path d="M203 155V314" stroke="#78818a" stroke-width="7"/><circle cx="235" cy="226" r="111" fill="url(#lamp)" opacity=".8"/><rect x="491" y="161" width="309" height="168" fill="#334554"/><rect x="515" y="176" width="260" height="138" fill="#15273a"/><path d="M643 179V310" stroke="#717c83" stroke-width="8"/><rect x="420" y="337" width="70" height="87" fill="#60727a"/><rect x="510" y="337" width="70" height="87" fill="#60727a"/><path d="M418 354L580 354 M449 346V425 M544 346V425" stroke="#a1a69c" stroke-width="7"/><rect x="424" y="328" width="154" height="16" fill="#c4b58f"/><path d="M0 446L900 404" stroke="#a2acaf" stroke-width="5" opacity=".46"/><rect x="48" y="165" width="170" height="49" fill="#d7d0b7"/><text x="132" y="195" text-anchor="middle" font-size="22" font-family="sans-serif" fill="#334651">灯坂駅</text><ellipse cx="710" cy="250" rx="155" ry="90" fill="url(#lamp)"/>`;
-return `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="夜の灯坂駅の風景" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice">${sky}${part}</svg>`;
-}
-
-function navArt(where,large=false){const node=e('div','art-frame'+(large?' large-art':''));node.innerHTML=artwork(P[where].art)+'<div class="art-shade"></div>';const cap=e('div','art-caption');cap.append(e('span','place-tag','ひさかえき / '+P[where].sub),e('h2','',P[where].name));node.append(cap);return node}
-function sceneNav(parent){const nav=e('div','place-nav');Object.keys(P).forEach(id=>{const p=P[id],b=e('button','place-btn'+(S.place===id?' active':''));b.type='button';b.disabled=!!S.moment||!reachable(id);b.title=b.disabled&&!reachable(id)?'夜が進むと訪れられます':p.name;b.append(e('span','',p.short),e('small','',p.name));b.onclick=()=>visit(id);nav.append(b)});parent.append(nav)}
-function scenePanel(parent){const area=e('section','story');const m=e('div','meta');m.append(e('span','',chapter()),e('span','',timeText()+` · ${S.tick}場面`));area.append(m);
-if(S.moment){area.append(e('div','chapter','この場所で起きたこと'),e('h1','',S.moment.title));const copy=e('div','story-copy');prose(copy,S.moment.body);area.append(copy);const footer=e('div','story-footer'),choices=e('div','choices');if(S.moment.choices&&S.moment.choices.length){area.append(e('div','choice-note','どうする？'));S.moment.choices.forEach((o,i)=>choices.append(button(o.label,()=>resolve(i))))}else{choices.append(button('駅を歩き続ける',closeMoment,'choice primary'))}footer.append(choices);area.append(footer)}else{
-area.append(e('div','chapter','自由に歩く'),e('h1','',P[S.place].name));const copy=e('div','story-copy');let v=P[S.place].intro;if(S.place==='platform')v+='\n\n'+(S.tick<12?P.platform.early:P.platform.late);if(S.place==='waiting')v+='\n\n'+(S.tick<12?P.waiting.early:P.waiting.late)+(S.tick>=12?'\n\n暖房の低い音が止まり、窓際が冷えている。'+(['shared','helped'].includes(thread('cold'))?' それでも今夜は、少しだけ暖かく過ごせそうだ。':''):'')+(piece('morning_correction')?'\n\n本人が言い直した希望は、朝の人の控えに別の行として残った。':piece('morning_beside')?'\n\n子どものための席が空いている。そこは、本人が話す場所だ。':'');if(S.place==='slope'&&S.tick>=15)v+='\n\n'+(piece('handoff_shop')?'店は閉まっている。掲示の確認は、朝の担当へ渡された。':'店先では、誰かが帰り支度をしている。');if(S.place==='gate'&&S.tick>=30)v+='\n\n改札を行き来する人影が少し増えた。'+(thread('line')==='connected'?' 夜間担当からの連絡が巡回にも届いている。':'')+(piece('handoff_fix')?' 古い掲示を直す人も、すでに決まっている。':'');prose(copy,v);area.append(copy);
-const footer=e('div','story-footer'),choices=e('div','choices');footer.append(e('div','choice-note','ここで、何をする？'));
-const aa=atActions(S.place);
-const focus=aa.filter(a=>a.id==='dawn'||/^(echo_|cross_|morning_|npc_)/.test(a.id));
-const rest=aa.filter(a=>!focus.includes(a));
-if(focus.length){choices.append(e('div','action-category','今夜の出来事、その続き'));focus.forEach(a=>choices.append(button(a.label,()=>interact(a.id),a.id==='dawn'?'choice primary':'choice consequence')))}
-if(rest.length>8||focus.length&&rest.length>4){
- const details=e('details','more-actions');details.append(e('summary','','ほかのことをする（'+rest.length+'）'));
- const more=e('div','more-action-list');rest.forEach(a=>more.append(button(a.label,()=>interact(a.id),'choice')));details.append(more);choices.append(details)
-}else{rest.forEach(a=>choices.append(button(a.label,()=>interact(a.id),'choice')))}
-const w=A.find(a=>a.id==='wait');choices.append(button('何もせず、少し待つ',()=>interact(w.id),'choice faint'));
-if(S.tick>=48&&S.place!=='gate')choices.append(button('朝を迎えるため、改札へ向かう',()=>visit('gate'),'choice primary'));
-if(aa.length===0)footer.append(e('p','mini','ここでできることは、いまは少ない。別の場所へ行くか、少し待ってみてもいい。'));
-footer.append(choices);area.append(footer)}parent.append(area)}
-function scenarioLines(){
- const cold={unseen:'まだ暖房の異常を確かめていない',ready:'毛布を使えるようにした',reported:'暖房故障を相談できる状態',shared:'子どもが毛布を使うと決めた',left:'毛布を本人が選べる場所に置いた',helped:'巡回の人が暖房故障と寒さを引き継いだ'};
- const letter={unseen:'紺色の袋のことをまだ聞いていない',open:'子どもの話を聞いた',wait:'手紙を見せるか本人が考えている',note:'本人の希望を二行のメモにした',kept:'本人が紙を預かっている',confirmed:'子どもが二行のメモを直した',given:'子ども自身がメモを手渡した'};
- const line={unseen:'今夜の連絡先は未確認',old:'古い番号が使えないとわかった',shop:'駅前の人に確かめるつもり',verified:'新しい窓口を確認した',connected:'今夜の担当へつながった'};
- return ['待合室の寒さ：'+(cold[thread('cold')]||cold.unseen),'紺色の袋：'+(letter[thread('letter')]||letter.unseen),'夜の連絡：'+(line[thread('line')]||line.unseen), '今夜の頼み事：'+(piece('child_answer')?'子どもに確かめたことを返した':piece('child_self_done')?'子どもが自分で確認した':piece('patrol_reported')?'巡回の人に確認結果を返した':piece('visitor_returned')?'白い手袋を探す人に関わった':'まだ、ほかにも声がかかるかもしれない')];
-}
-function callPanel(parent){
- const calls=activeCalls();if(!calls.length)return;
- const box=e('div','scenario-panel call-panel');box.append(e('div','journal-head','駅からの声'));
- box.append(e('p','mini','あなたが探しに行かなくても、向こうから声がかかることがあります。応じるかは自由です。'));
- calls.forEach(id=>{
-  const c=CALLS[id],item=e('div','scenario-item call-item');
-  item.append(e('strong','',c.label),e('p','',c.message));
-  if(reachable(c.place))item.append(button(P[c.place].name+'へ行く',()=>visit(c.place),'choice faint'));
-  box.append(item);
- });parent.append(box);
-}
-function scenarioPanel(parent){
- if(S.tick<11)return;
- const box=e('div','scenario-panel');box.append(e('div','journal-head','今夜、気になっていること'));box.append(e('p','mini','見つけた出来事は、他の場所で次の行動につながります。すべてを解決する必要はありません。'));
- const lines=scenarioLines();
- if(S.tick>=39){
-  const status=e('div','scenario-item echo-item');status.append(e('strong','','05 / 前の選択、そのあと'));
-  const what=piece('morning_correction')?'本人の言い直しが、朝の人へ届いた':piece('morning_beside')?'子どもが自分で話す席ができた':piece('echo_note')?'子どもが、伝えたい二行を自分で書いた':piece('echo_voice')?'子どもが自分で話す準備をした':piece('line_correction')?'訂正できることが確認された':piece('visitor_echo')?'手袋の出来事が、別の話へつながった':piece('child_answer')?'子どもの頼みを返せた':'まだ、どこかに続きがあるかもしれない';
-  status.append(e('p','',what));box.append(status);
+function renderPlay(main){
+ const layout=e('div','layout'),left=e('div','left');left.append(navArt(S.place));sceneNav(left);
+ const pos=e('div','atmosphere');pos.append(e('strong','',`現在地 / ${P[S.place].name}`),e('p','',P[S.place].intro));left.append(pos);
+ const state=e('details','scenario-panel');const sum=e('summary','journal-head','今夜、気になること');state.append(sum,e('p','mini',situation()));
+ state.append(e('p','mini',`目撃した出来事：${Object.keys(S.observed).length}件　／　訪ねた場所：${S.seen.length}か所`));left.append(state);
+ const journal=e('details','journal-panel');journal.append(e('summary','journal-head','今夜の記録（'+S.journal.length+'件）'));const entries=e('div','journal-lines');S.journal.slice(-3).forEach(x=>entries.append(e('p','',x.line)));if(!S.journal.length)entries.append(e('p','', 'まだ、何も書かれていない。'));journal.append(entries,button('すべて見る',()=>{S.mode='journal';render()},'small-btn wide'));left.append(journal);
+ layout.append(left);const area=e('section','story');area.append(e('div','meta',undefined));area.lastChild.append(e('span','',ACT_TITLES[S.act]),e('span','',`${TIME[S.act]} · ${S.tick}場面`));
+ if(S.moment){
+  area.append(e('div','chapter','この場所で起きたこと'),e('h1','',S.moment.title));const copy=e('div','story-copy');prose(copy,S.moment.body);area.append(copy);
+  const foot=e('div','story-footer'),actions=e('div','choices');foot.append(e('div','choice-note','どうする？'));
+  if(S.moment.choices?.length){S.moment.choices.forEach(c=>actions.append(button(c.label,()=>choose(c.action))))}else actions.append(button('駅を歩き続ける',closeMoment,'choice primary'));
+  foot.append(actions);area.append(foot);
+ }else{
+  area.append(e('div','chapter','自由に歩く'),e('h1','',P[S.place].name));const copy=e('div','story-copy');let detail=P[S.place].intro;
+  if(S.place==='platform')detail+='\n\n'+(S.act===1?'ベンチに子どもが座っている。':S.act<4?'ベンチは空いている。子どもは待合室に移ったらしい。':'朝のホームには、夜とは違う光がある。');
+  if(S.place==='waiting'&&S.act>=2)detail+='\n\n暖房の音は止まっている。'+(seen('blanket_used')?' 子どもは毛布を自分で使っていた。':'');
+  if(S.place==='gate'&&S.act===4)detail+='\n\n朝の担当者が到着し、人々が話し始めている。';
+  prose(copy,detail);area.append(copy);
+  const footer=e('div','story-footer'),choices=e('div','choices');footer.append(e('div','choice-note','ここで、何をする？'));
+  const aa=actionsHere();aa.forEach(sc=>choices.append(button(sc.label,()=>interact(sc.id),'choice')));
+  if(S.act<4)choices.append(button(['','少し待って、夜を進める','さらに夜を過ごす','夜明けを迎える'][S.act],progress,'choice primary'));
+  else choices.append(button('この夜の結末を選ぶ',progress,'choice primary'));
+  if(!aa.length)footer.append(e('p','mini','ここで新しくできることは少ない。ほかの場所へ行くか、時間を進めてみてもいい。'));
+  footer.append(choices);area.append(footer);
  }
- const titles=['01 / 待合室','02 / 紺色の袋','03 / 夜の連絡','04 / 駅からの声'];
- lines.forEach((v,i)=>{
-  if(i===0&&S.tick<12)return;if(i===1&&S.tick<16)return;if(i===2&&S.tick<19)return;if(i===3&&S.tick<15)return;
-  const a=e('div','scenario-item');a.append(e('strong','',titles[i]),e('p','',v.split('：').slice(1).join('：')));box.append(a);
- });
- if(piece('cold_separated')||piece('listener_options')||piece('line_owner'))box.append(e('p','mini','誰かと分担したことが、朝の準備にも残っている。'));
- parent.append(box);
+ layout.append(area);main.append(layout);
 }
-
-function journalPanel(parent){const box=e('div','journal-panel');const head=e('div','journal-head');head.append(e('strong','','今夜の記録'),e('span','',S.journal.length+'件'));box.append(head);const lines=e('div','journal-lines');S.journal.slice(-4).forEach(j=>lines.append(e('p','',j.line)));if(!S.journal.length)lines.append(e('p','muted','まだ記録はない。'));box.append(lines);box.append(button('記録をすべて見る',()=>{S.mode='journal';render()},'small-btn wide'));parent.append(box)}
-function renderPlay(main){const layout=e('div','layout');const left=e('div','left');left.append(navArt(S.place));sceneNav(left);const a=e('div','atmosphere');a.append(e('strong','','現在地 / '+P[S.place].name),e('p','',P[S.place].intro));left.append(a);callPanel(left);scenarioPanel(left);journalPanel(left);layout.append(left);scenePanel(layout);main.append(layout)}
-function renderTitle(main){const cover=e('div','cover');const visual=e('div','cover-visual');visual.append(navArt('platform',true));const panel=e('div','cover-copy');panel.append(e('div','eyebrow','灯坂駅の夜 / 体験版 v0.8'));const h=e('h1','','灯坂駅の夜');h.append(e('small','','行き先を書かない夜'));panel.append(h,e('p','','終電のあとに出会った子どもと、朝まで過ごす。\n\n誰かの頼みを受け、別の誰かへ渡す。以前の選択が、朝になってもう一度あなたに返ってくる。\n誰かを送る前に、自分がどこから来たかもわからない。'));const marks=e('div');['探索できる８か所','複数の出来事が後からつながる','いくつもの朝','オフライン','場面で切り替わるBGM・環境音'].forEach(x=>marks.append(e('span','mark',x)));panel.append(marks,button('今夜をはじめる',start,'choice primary'));panel.append(button('♪ BGMを聴き比べる（押すたび切替）',()=>Sound.previewNext(),'choice faint'));
-if(read(SAVE)?.mode==='play')panel.append(button('続きから遊ぶ',resume));if(archive.nights.length)panel.append(button('これまでの夜の記録',()=>{S={mode:'archive'};render()},'choice faint'));panel.append(e('div','stats',`過ごした夜：${archive.nights.length}回 / 記録された結末：${new Set(archive.nights.map(n=>n.kind)).size}種類`));
- if(archive.nights.length>0)panel.append(e('p','audio-tip','前に見た夜とは違う選び方をしてみてもいい。前の記録を持つのはプレイヤーで、登場人物ではありません。'));panel.append(e('div','credits','原作『帰れない子を送る駅』KRS v2.05参照。非正本のゲームオリジナル短編。\n既存人物の物語・設定を変更しません。ブラウザ上でのみ動作します。'));panel.append(e('p','audio-tip','音楽は場面ごとに曲調が変わります。「BGMを聴き比べる」で４種類を順に試聴できます（約11秒で戻ります）。iPhoneでは最初にボタンを押すと音が有効になります。上部で音量・ミュートを設定できます。'));cover.append(visual,panel);main.append(cover)}
-function renderJournal(main){const wrap=e('div','book');wrap.append(e('div','eyebrow','今夜の記録'),e('h1','','見たこと、残ったこと'));wrap.append(e('p','mini','これは「駅で実際に起きたすべて」ではなく、あなたが知ったことの記録。知らないまま過ぎた出来事もある。'));const events=e('div','book-entries');S.journal.forEach(j=>{const card=e('div','memory-detail');card.append(e('div','caption',j.at+' / '+j.type),e('p','',j.line));events.append(card)});if(!S.journal.length)events.append(e('p','', 'まだ、記録はない。'));wrap.append(events,button('記録をテキストで保存',exportText,'choice'),button('駅に戻る',()=>{S.mode='play';render()},'choice primary'));main.append(wrap)}
-function renderEnding(main){const ending=END[S.ending];const l=e('div','layout'),left=e('div','left');left.append(navArt('platform'));const q=e('div','atmosphere');q.append(e('strong','','今夜、残ったもの'),e('p','',ending.reflection));left.append(q);const b=e('section','story ending');const m=e('div','meta');m.append(e('span','','第四幕　朝へ渡す'),e('span','','夜明け'));b.append(m,e('div','chapter','ある夜の終わり'),e('h1','',ending.name));const cp=e('div','story-copy');prose(cp,ending.text()+scenarioDawn());b.append(cp);
-const stats=e('div','memory-detail');stats.append(e('div','caption','今夜の足跡'),e('p','',`見た場所 ${S.seen.length}か所 / 行動 ${S.tick}場面 / 覚えていること ${S.journal.length}件`));b.append(stats);const branch=e('div','memory-detail');branch.append(e('div','caption','あなたが関わった出来事'));scenarioLines().forEach(t=>branch.append(e('p','',t)));b.append(branch);const footer=e('div','story-footer');footer.append(e('div','choice-note','これは成功・失敗の判定ではありません。'));const actions=e('div','choices');actions.append(button('今夜の記録をテキストで保存',exportText,'choice primary'),button('別の夜を過ごす',start),button('タイトルへ戻る',home,'choice faint'));footer.append(actions);b.append(footer);l.append(left,b);main.append(l)}
-function nightTraits(n){const p=n.pieces||{},a=[];
- if(p.morning_correction)a.push('言い直しを伝えた');else if(p.morning_beside)a.push('子どもが直接話した');else if(p.morning_unknown)a.push('未確認を渡した');else if(p.morning_pause)a.push('待つ時間を残した');
- if(p.visitor_returned)a.push('手袋の行き先を見た');if(p.patrol_reported||p.handoff_fix||p.handoff_shop)a.push('町への引き継ぎを確かめた');
- if(n.flags?.self)a.push('自分の切符を考えた');return a.length?a:['まだ知らないことがあった'];
-}
-function renderArchive(main){const wrap=e('div','book');wrap.append(e('div','eyebrow','駅務日誌ではなく、あなたの記憶'),e('h1','','これまでの夜'));
- wrap.append(e('p','mini','これは同じ夜の「別の過ごし方」を見比べる、プレイヤーの記録です。駅の子どもが前の夜を覚えている設定ではありません。'));
- archive.nights.forEach((n,i)=>{const c=e('div','memory-detail');c.append(e('div','caption',`第${archive.nights.length-i}夜 ・ ${n.date} ・ ${n.steps}場面`),e('h3','',n.name),e('p','',`訪れた場所：${n.visited.map(p=>P[p]?.name||p).join('、')}`),e('p','',`見届けたこと：${nightTraits(n).join(' ／ ')}`),e('p','',`記録に残ったこと：${n.journal.slice(-2).map(j=>j.line).join(' ／ ')||'静かに夜が過ぎた。'}`));wrap.append(c)});
- if(archive.nights.length>=2){const [a,b]=archive.nights;const c=e('div','memory-detail difference');c.append(e('div','caption','二つの夜を並べてみる'),e('p','',`直近の夜：${nightTraits(a).join('、')}\nひとつ前の夜：${nightTraits(b).join('、')}`));wrap.append(c)}
- wrap.append(button('タイトルへ戻る',home,'choice primary'));wrap.append(button('これまでの記録を消す',()=>{if(confirm('保存された夜の記録をすべて消しますか？')){archive={nights:[]};clear(ARCH);render()}},'choice faint'));main.append(wrap)}
-function render(){const main=$('main');main.replaceChildren();$('saveBtn').disabled=S.mode!=='play';$('journalBtn').disabled=!['play','ending'].includes(S.mode);$('journalBtn').textContent=S.mode==='ending'?'記録を書き出す':'今夜の記録';$('homeBtn').disabled=S.mode==='title';if(S.mode==='title')renderTitle(main);else if(S.mode==='journal')renderJournal(main);else if(S.mode==='archive')renderArchive(main);else if(S.mode==='ending')renderEnding(main);else renderPlay(main);Sound.updateScene()}
+function renderTitle(main){const cover=e('div','cover'),visual=e('div','cover-visual');visual.append(navArt('platform',true));const panel=e('div','cover-copy');panel.append(e('div','eyebrow','灯坂駅の夜 / 体験版 v0.9'));const h=e('h1','','灯坂駅の夜');h.append(e('small','','言い直せる夜'));panel.append(h,e('p','','終電のあとの三番線。紺色の袋を持った子どもが、一人待っている。\n\n以前に伝えた言葉と、今の気持ち。誰かのためにできることと、自分自身のためにできること。\n\nこの夜を、どう過ごすだろう。'));const marks=e('div');['探索できる8か所','四幕の物語','選べる結末が変化','行動で変わる朝','オフライン音楽'].forEach(x=>marks.append(e('span','mark',x)));panel.append(marks,button('今夜をはじめる',start,'choice primary'),button('♪ BGMを聴き比べる',()=>Sound.previewNext(),'choice faint'));
+ if(read(SAVE)?.version==='0.9'&&read(SAVE)?.mode==='play')panel.append(button('続きから遊ぶ',resume));if(archive.nights.length)panel.append(button('以前の夜の記録',()=>{S={mode:'archive'};render()},'choice faint'));
+ panel.append(e('div','stats',`過ごした夜：${archive.nights.length}回 / 到達した結末：${new Set(archive.nights.map(n=>n.kind)).size}種類`));panel.append(e('div','credits','原作『帰れない子を送る駅』に着想を得た非正本・独立ゲーム。\n原作の設定や既存人物の物語は変更しません。\n\nv0.8とは別のセーブデータを使う脚本改修試作です。BGM・駅の画面はv0.8の仕組みを継承しています。\n音は最初のボタン操作で有効になります。'));cover.append(visual,panel);main.append(cover)}
+function renderJournal(main){const wrap=e('div','book');wrap.append(e('div','eyebrow','今夜の記録'),e('h1','','見たこと、残ったこと'),e('p','mini','この記録は、あなたが選んだことと実際に見聞きしたこと。駅で起きたすべてではありません。'));const entries=e('div','book-entries');S.journal.forEach(j=>{const card=e('div','memory-detail');card.append(e('div','caption',j.at+' / '+j.type),e('p','',j.line));entries.append(card)});if(!S.journal.length)entries.append(e('p','', 'まだ、記録はない。'));wrap.append(entries,button('記録をテキストで保存',exportText),button('駅に戻る',()=>{S.mode='play';render()},'choice primary'));main.append(wrap)}
+function renderEnding(main){const ending=END[S.ending];const layout=e('div','layout'),left=e('div','left');left.append(navArt('platform'));const a=e('div','atmosphere');a.append(e('strong','','今夜、残ったもの'),e('p','',ending.reflection));left.append(a);const area=e('section','story ending');const meta=e('div','meta');meta.append(e('span','','第四幕　それぞれの朝'),e('span','','夜明け'));area.append(meta,e('div','chapter','この夜は、ここまで'),e('h1','',ending.name));const copy=e('div','story-copy');prose(copy,endingText());area.append(copy);const stats=e('div','memory-detail');stats.append(e('div','caption','今夜の足跡'),e('p','',`訪れた場所 ${S.seen.length}か所 / 行動 ${S.tick}場面 / 覚えていること ${S.journal.length}件`));area.append(stats);const footer=e('div','story-footer');footer.append(e('div','choice-note','これは成功・失敗の判定ではありません。'));const choices=e('div','choices');choices.append(button('今夜の記録をテキストで保存',exportText,'choice primary'),button('別の夜を過ごす',start),button('タイトルへ戻る',home,'choice faint'));footer.append(choices);area.append(footer);layout.append(left,area);main.append(layout)}
+function renderArchive(main){const wrap=e('div','book');wrap.append(e('div','eyebrow','以前の夜'),e('h1','','同じ駅、違う夜'),e('p','mini','別の選択をした夜の記録です。登場人物が前のプレイを覚えているわけではありません。'));archive.nights.forEach((n,i)=>{const card=e('div','memory-detail');card.append(e('div','caption',`${n.date} ・ ${n.steps}場面`),e('h3','',n.name),e('p','',`行った場所：${n.visited.map(x=>P[x]?.name||x).join('、')}`),e('p','',`最後に覚えていること：${n.journal.slice(-2).map(x=>x.line).join(' ／ ')||'朝になった。'}`));wrap.append(card)});if(archive.nights.length>=2){const [a,b]=archive.nights;const c=e('div','memory-detail difference');c.append(e('div','caption','二つの夜の違い'),e('p','',`直近：${Object.keys(a.observed||{}).length}件の出来事を確認\nひとつ前：${Object.keys(b.observed||{}).length}件の出来事を確認`));wrap.append(c)}wrap.append(button('タイトルへ戻る',home,'choice primary'),button('以前の記録を消す',()=>{if(confirm('v0.9の以前の夜の記録を消しますか？')){archive={nights:[]};clear(ARCH);render()}},'choice faint'));main.append(wrap)}
+function render(){const main=$('main');main.replaceChildren();$('saveBtn').disabled=S.mode!=='play';$('journalBtn').disabled=!['play','ending'].includes(S.mode);$('journalBtn').textContent=S.mode==='ending'?'記録を書き出す':'今夜の記録';$('homeBtn').disabled=S.mode==='title';if(S.mode==='title')renderTitle(main);else if(S.mode==='journal')renderJournal(main);else if(S.mode==='archive')renderArchive(main);else if(S.mode==='ending')renderEnding(main);else renderPlay(main);Sound.updateScene();}
 $('soundBtn').onclick=()=>Sound.changeEnabled();
 $('volumeRange').oninput=event=>Sound.changeVolume(event.target.value);
 document.addEventListener('visibilitychange',()=>Sound.pauseIfHidden());
-$('saveBtn').onclick=()=>{const b=$('saveBtn');const ok=save();b.textContent=ok?'保存しました':'保存不可（ブラウザ設定）';setTimeout(()=>b.textContent='途中を保存',1300)};
+$('saveBtn').onclick=()=>{const b=$('saveBtn'),ok=save();b.textContent=ok?'保存しました':'保存不可（ブラウザ設定）';setTimeout(()=>b.textContent='途中を保存',1300)};
 $('homeBtn').onclick=home;
 $('journalBtn').onclick=()=>{if(S.mode==='play'){S.mode='journal';render()}else if(S.mode==='ending')exportText()};
 render();Sound.paint();
-})();
-</script></body></html>
+
+})();</script></body></html>
